@@ -81,7 +81,7 @@ export default function RequestsList() {
     const clean = Object.fromEntries(Object.entries(extracted).filter(([, v]) => v !== null && v !== undefined));
     toast.success("הקובץ עובד! מעביר לטופס...");
     setImporting(false);
-    navigate("/new-request", { state: { prefill: { ...clean, request_type: clean.request_type || "project_sign", permit_visualization_file: file_url } } });
+    navigate("/new-request", { state: { prefill: { ...clean, request_type: clean.request_type || "project_sign" } } });
   };
 
   const filtered = requests.filter((r) => {
