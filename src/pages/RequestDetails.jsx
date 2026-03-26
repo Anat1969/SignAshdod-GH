@@ -20,6 +20,7 @@ import {
 import StatusBadge from "../components/StatusBadge";
 import DocumentChecklist from "../components/DocumentChecklist";
 import RequestInfoGrid from "../components/RequestInfoGrid";
+import SignPreview from "../components/SignPreview";
 import NotesList from "../components/NotesList";
 
 export default function RequestDetails() {
@@ -260,6 +261,18 @@ export default function RequestDetails() {
               <RequestInfoGrid request={request} />
             </CardContent>
           </Card>
+
+          {/* Sign Preview */}
+          {request.request_type === "project_sign" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">תצוגת שלט</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SignPreview request={request} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Documents */}
           <Card>
