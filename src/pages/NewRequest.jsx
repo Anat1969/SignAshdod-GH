@@ -66,7 +66,7 @@ export default function NewRequest() {
               <ProjectSignForm form={form} setForm={setForm} />
               <div className="mt-8">
                 <h3 className="text-base font-semibold mb-3 text-foreground border-b border-border pb-2">תצוגה מקדימה של השלט</h3>
-                <SignPreview request={form} />
+                <SignPreview request={form} onChange={setForm} />
               </div>
             </TabsContent>
             <TabsContent value="talking_fence">
