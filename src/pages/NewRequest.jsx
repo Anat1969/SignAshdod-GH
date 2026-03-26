@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import ProjectSignForm from "../components/ProjectSignForm";
 import TalkingFenceForm from "../components/TalkingFenceForm";
 import SignPreview from "../components/SignPreview";
+import ExtractedDataPreview from "../components/ExtractedDataPreview";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
@@ -144,6 +145,7 @@ export default function NewRequest() {
             </TabsList>
 
             <TabsContent value="project_sign">
+              {prefillData && <ExtractedDataPreview form={prefillData} onChange={setForm} />}
               <ProjectSignForm form={form} setForm={setForm} />
               <div className="mt-8">
                 <div className="flex items-center justify-between mb-3 border-b border-border pb-2">
@@ -163,6 +165,7 @@ export default function NewRequest() {
               </div>
             </TabsContent>
             <TabsContent value="talking_fence">
+              {prefillData && <ExtractedDataPreview form={prefillData} onChange={setForm} />}
               <TalkingFenceForm form={form} setForm={setForm} />
             </TabsContent>
           </Tabs>
