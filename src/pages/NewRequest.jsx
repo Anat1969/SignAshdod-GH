@@ -19,6 +19,15 @@ export default function NewRequest() {
   const [requestType, setRequestType] = useState(prefill?.request_type || "project_sign");
 
   const [form, setForm] = useState(prefill ? { fence_developer_percent: 50, fence_municipality_percent: 50, ...prefill } : { fence_developer_percent: 50, fence_municipality_percent: 50 });
+
+  useEffect(() => {
+    if (location.state?.prefill) {
+      const p = location.state.prefill;
+      setRequestType(p.request_type || "project_sign");
+      setForm({ fence_developer_percent: 50, fence_municipality_percent: 50, ...p });
+    }
+  }, [location.state]);
+
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
