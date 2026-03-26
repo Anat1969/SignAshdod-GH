@@ -25,6 +25,8 @@ export default function NewRequest() {
   const debounceRef = useRef(null);
 
   const autoSave = useCallback(async (currentForm, currentType) => {
+    if (!currentForm.applicant_name?.trim() || !currentForm.applicant_phone?.trim() ||
+        !currentForm.applicant_email?.trim() || !currentForm.site_address?.trim()) return;
     setAutoSaving(true);
     const data = { ...currentForm, request_type: currentType, status: "draft" };
     if (savedIdRef.current) {
