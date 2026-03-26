@@ -6,7 +6,7 @@ export default function ProjectSignForm({ form, setForm }) {
   const update = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       {/* Applicant Details */}
       <section className="space-y-4">
         <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">
