@@ -63,6 +63,10 @@ export default function NewRequest() {
     if (!asDraft && !validate()) return;
     setSubmitting(true);
     const data = {
+      applicant_name: "טיוטה",
+      applicant_phone: "לא צוין",
+      applicant_email: "draft@placeholder.com",
+      site_address: "לא צוין",
       ...form,
       request_type: requestType,
       status: asDraft ? "draft" : "submitted",
