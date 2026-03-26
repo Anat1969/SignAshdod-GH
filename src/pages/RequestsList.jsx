@@ -1,18 +1,22 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Search } from "lucide-react";
+import { FileText, Search, Upload, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import StatusBadge from "../components/StatusBadge";
 
 export default function RequestsList() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [user, setUser] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const importRef = useRef();
 
   useEffect(() => {
     const load = async () => {
@@ -33,6 +37,61 @@ export default function RequestsList() {
     };
     load();
   }, []);
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    toast.info("מעבד את הקובץ...");
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    const extracted = await base44.integrations.Core.InvokeLLM({
+      prompt: `חלץ את כל הפרטים הבאים מהמסמך המצורף ומלא אותם בדיוק כפי שמופיעים.
+אם שדה לא מופיע השאר null.
+החזר JSON בלבד ללא הסבר.`,
+      file_urls: [file_url],
+      response_json_schema: {
+        type: "object",
+        properties: {
+          request_type: { type: "string", enum: ["project_sign", "talking_fence"] },
+          applicant_name: { type: "string" },
+          applicant_phone: { type: "string" },
+          applicant_email: { type: "string" },
+          site_address: { type: "string" },
+          permit_nature: { type: "string" },
+          permit_number: { type: "string" },
+          project_name: { type: "string" },
+          developer_name: { type: "string" },
+          architect_name: { type: "string" },
+          contractor_name: { type: "string" },
+          contractor_license: { type: "string" },
+          engineer_name: { type: "string" },
+          engineer_license: { type: "string" },
+          site_manager_name: { type: "string" },
+          safety_officer_name: { type: "string" },
+          company_name: { type: "string" },
+          company_po_box: { type: "string" },
+          company_address: { type: "string" },
+          fence_total_length_meters: { type: "number" },
+          fence_developer_percent: { type: "number" },
+          fence_municipality_percent: { type: "number" },
+        }
+      }
+    });
+    // Remove null values
+    const clean = Object.fromEntries(Object.entries(extracted).filter(([, v]) => v !== null && v !== undefined));
+    const created = await base44.entities.SignageRequest.create({
+      ...clean,
+      request_type: clean.request_type || "project_sign",
+      applicant_name: clean.applicant_name || "לא צוין",
+      applicant_phone: clean.applicant_phone || "לא צוין",
+      applicant_email: clean.applicant_email || "lo@lo.com",
+      site_address: clean.site_address || "לא צוין",
+      status: "draft",
+    });
+    toast.success("הבקשה נוצרה מהקובץ!");
+    setImporting(false);
+    navigate(`/request/${created.id}`);
+  };
 
   const filtered = requests.filter((r) => {
     const matchSearch =
@@ -55,7 +114,22 @@ export default function RequestsList() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">כל הבקשות</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">כל הבקשות</h1>
+        {user?.role === "admin" && (
+          <>
+            <input ref={importRef} type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.csv" onChange={handleImport} />
+            <button
+              onClick={() => importRef.current?.click()}
+              disabled={importing}
+              className="flex items-center gap-2 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              ייבוא מקובץ
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
