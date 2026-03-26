@@ -119,19 +119,43 @@ function EditableField({ value, onChange, dark, placeholder, className = "" }) {
 
 function ImageField({ value, onChange, label }) {
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const inputRef = useRef();
 
-  const handleFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const uploadFile = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     onChange(file_url);
     setUploading(false);
   };
 
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (file) await uploadFile(file);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) await uploadFile(file);
+  };
+
+  const handlePaste = async (e) => {
+    const item = Array.from(e.clipboardData.items).find(i => i.type.startsWith('image/'));
+    if (item) await uploadFile(item.getAsFile());
+  };
+
   return (
-    <div className="flex-1 flex items-center justify-center m-3 border-2 border-dashed border-gray-300 relative min-h-[120px]">
+    <div
+      className={`flex-1 flex items-center justify-center m-3 border-2 border-dashed relative min-h-[120px] cursor-pointer transition-colors ${dragging ? 'border-[#1a9faf] bg-[#1a9faf]/5' : 'border-gray-300'}`}
+      onDrop={handleDrop}
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onPaste={handlePaste}
+      tabIndex={0}
+    >
       {value ? (
         <>
           <img src={value} alt="הדמיית היתר" className="max-h-40 max-w-full object-contain" />
@@ -157,6 +181,7 @@ function ImageField({ value, onChange, label }) {
                 <Upload className="w-3 h-3" />
                 {uploading ? "מעלה..." : "העלה תמונה"}
               </button>
+              <p className="text-[10px] text-gray-400 mt-1">או גרור / הדבק (Ctrl+V)</p>
               <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
             </>
           )}
