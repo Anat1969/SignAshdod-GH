@@ -8,6 +8,7 @@ import { Send, Save, Loader2, Signpost, Fence } from "lucide-react";
 import { toast } from "sonner";
 import ProjectSignForm from "../components/ProjectSignForm";
 import TalkingFenceForm from "../components/TalkingFenceForm";
+import SignPreview from "../components/SignPreview";
 
 export default function NewRequest() {
   const navigate = useNavigate();
@@ -63,6 +64,10 @@ export default function NewRequest() {
 
             <TabsContent value="project_sign">
               <ProjectSignForm form={form} setForm={setForm} />
+              <div className="mt-8">
+                <h3 className="text-base font-semibold mb-3 text-foreground border-b border-border pb-2">תצוגה מקדימה של השלט</h3>
+                <SignPreview request={form} />
+              </div>
             </TabsContent>
             <TabsContent value="talking_fence">
               <TalkingFenceForm form={form} setForm={setForm} />
