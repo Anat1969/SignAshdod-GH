@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,32 @@ export default function NewRequest() {
   const [form, setForm] = useState({ fence_developer_percent: 50, fence_municipality_percent: 50 });
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [savedId, setSavedId] = useState(null);
   const previewRef = useRef();
+  const savedIdRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const autoSave = useCallback(async (currentForm, currentType) => {
+    setAutoSaving(true);
+    const data = { ...currentForm, request_type: currentType, status: "draft" };
+    if (savedIdRef.current) {
+      await base44.entities.SignageRequest.update(savedIdRef.current, data);
+    } else {
+      const created = await base44.entities.SignageRequest.create(data);
+      savedIdRef.current = created.id;
+      setSavedId(created.id);
+    }
+    setAutoSaving(false);
+  }, []);
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      autoSave(form, requestType);
+    }, 800);
+    return () => clearTimeout(debounceRef.current);
+  }, [form, requestType]);
 
   const validate = () => {
     if (!form.applicant_name?.trim()) { toast.error("נא למלא שם מבקש"); return false; }
@@ -29,6 +54,7 @@ export default function NewRequest() {
   };
 
   const handleSubmit = async (asDraft = false) => {
+    clearTimeout(debounceRef.current);
     if (!asDraft && !validate()) return;
     setSubmitting(true);
     const data = {
@@ -36,9 +62,15 @@ export default function NewRequest() {
       request_type: requestType,
       status: asDraft ? "draft" : "submitted",
     };
-    const created = await base44.entities.SignageRequest.create(data);
+    let finalId = savedIdRef.current;
+    if (finalId) {
+      await base44.entities.SignageRequest.update(finalId, data);
+    } else {
+      const created = await base44.entities.SignageRequest.create(data);
+      finalId = created.id;
+    }
     toast.success(asDraft ? "הטיוטה נשמרה" : "הבקשה הוגשה בהצלחה!");
-    navigate(`/request/${created.id}`);
+    navigate(`/request/${finalId}`);
     setSubmitting(false);
   };
 
@@ -60,7 +92,17 @@ export default function NewRequest() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">בקשה חדשה לשילוט באתר בנייה</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">בקשה חדשה לשילוט באתר בנייה</h1>
+          {autoSaving && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" /> שומר...
+            </span>
+          )}
+          {!autoSaving && savedId && (
+            <span className="text-xs text-emerald-600">✓ נשמר אוטומטית</span>
+          )}
+        </div>
         <p className="text-muted-foreground mt-1">מלא את הפרטים הנדרשים וצרף את המסמכים</p>
       </div>
 
