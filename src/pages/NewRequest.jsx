@@ -15,18 +15,20 @@ import { jsPDF } from "jspdf";
 export default function NewRequest() {
   const navigate = useNavigate();
   const location = useLocation();
-  const prefill = location.state?.prefill;
-  const [requestType, setRequestType] = useState(prefill?.request_type || "project_sign");
 
-  const [form, setForm] = useState(prefill ? { fence_developer_percent: 50, fence_municipality_percent: 50, ...prefill } : { fence_developer_percent: 50, fence_municipality_percent: 50 });
-
-  useEffect(() => {
-    if (location.state?.prefill) {
-      const p = location.state.prefill;
-      setRequestType(p.request_type || "project_sign");
-      setForm({ fence_developer_percent: 50, fence_municipality_percent: 50, ...p });
+  // Load prefill from sessionStorage (set by import flow) or location state
+  const getPrefill = () => {
+    const stored = sessionStorage.getItem("signage_prefill");
+    if (stored) {
+      sessionStorage.removeItem("signage_prefill");
+      return JSON.parse(stored);
     }
-  }, [location.state]);
+    return location.state?.prefill || null;
+  };
+
+  const [prefillData] = useState(() => getPrefill());
+  const [requestType, setRequestType] = useState(prefillData?.request_type || "project_sign");
+  const [form, setForm] = useState(prefillData ? { fence_developer_percent: 50, fence_municipality_percent: 50, ...prefillData } : { fence_developer_percent: 50, fence_municipality_percent: 50 });
 
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);

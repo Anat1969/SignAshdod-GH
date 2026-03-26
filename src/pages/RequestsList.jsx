@@ -103,9 +103,11 @@ export default function RequestsList() {
     });
     // Remove null values
     const clean = Object.fromEntries(Object.entries(extracted).filter(([, v]) => v !== null && v !== undefined));
+    const prefillData = { ...clean, request_type: clean.request_type || "project_sign" };
+    sessionStorage.setItem("signage_prefill", JSON.stringify(prefillData));
     toast.success("הקובץ עובד! מעביר לטופס...");
     setImporting(false);
-    navigate("/new-request", { state: { prefill: { ...clean, request_type: clean.request_type || "project_sign" } } });
+    navigate("/new-request");
   };
 
   const filtered = requests.filter((r) => {
