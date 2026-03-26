@@ -45,8 +45,32 @@ export default function RequestsList() {
     toast.info("מעבד את הקובץ...");
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     const extracted = await base44.integrations.Core.InvokeLLM({
-      prompt: `חלץ את כל הפרטים הבאים מהמסמך המצורף ומלא אותם בדיוק כפי שמופיעים.
-אם שדה לא מופיע השאר null.
+      prompt: `קרא את המסמך המצורף בעיון ומלא את השדות הבאים לפי מה שמופיע בו. אם שדה לא מופיע, השאר null.
+
+התאמת שדות לעברית:
+- applicant_name = שם מבקש / שם מגיש
+- applicant_phone = מספר נייד / טלפון
+- applicant_email = אימייל / דוא"ל
+- site_address = כתובת אתר / כתובת הנכס
+- permit_nature = מהות ההיתר
+- permit_number = מספר היתר
+- project_name = שם הפרויקט
+- developer_name = שם היזם
+- architect_name = שם האדריכל
+- contractor_name = שם קבלן הביצוע
+- contractor_license = מספר רישיון קבלן
+- engineer_name = שם המהנדס
+- engineer_license = מספר רישיון מהנדס
+- site_manager_name = שם מנהל העבודה
+- safety_officer_name = שם אחראי הבטיחות
+- company_name = שם החברה
+- company_po_box = ת.ד. / מספר ח.פ.
+- company_address = כתובת הנכס / כתובת החברה
+- fence_total_length_meters = סה"כ אורך גדר במטרים
+- fence_developer_percent = אחוז חלק היזם
+- fence_municipality_percent = אחוז חלק העירייה
+- request_type = אם מדובר בגדר מדברת החזר "talking_fence", אחרת "project_sign"
+
 החזר JSON בלבד ללא הסבר.`,
       file_urls: [file_url],
       response_json_schema: {
