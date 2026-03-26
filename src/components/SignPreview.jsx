@@ -107,12 +107,16 @@ function EditableField({ value, onChange, dark, placeholder, className = "" }) {
       </span>
     );
   }
+  const hasValue = value && value.trim();
+  const borderColor = dark
+    ? (hasValue ? "border-green-300" : "border-red-300")
+    : (hasValue ? "border-green-500" : "border-red-400");
   return (
     <input
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder || ""}
-      className={`border-b ${dark ? "border-white/60 bg-transparent text-white placeholder-white/50" : "border-dotted border-gray-400 bg-transparent text-gray-900 placeholder-gray-300"} outline-none min-h-[1rem] w-full ${className}`}
+      className={`border-b ${dark ? `${borderColor} bg-transparent text-white placeholder-white/50` : `${borderColor} bg-transparent text-gray-900 placeholder-gray-300`} outline-none min-h-[1rem] w-full ${className}`}
     />
   );
 }
@@ -149,7 +153,7 @@ function ImageField({ value, onChange, label }) {
 
   return (
     <div
-      className={`flex-1 flex items-center justify-center m-3 border-2 border-dashed relative min-h-[120px] cursor-pointer transition-colors ${dragging ? 'border-[#1a9faf] bg-[#1a9faf]/5' : 'border-gray-300'}`}
+      className={`flex-1 flex items-center justify-center m-3 border-2 border-dashed relative min-h-[120px] cursor-pointer transition-colors ${dragging ? 'border-[#1a9faf] bg-[#1a9faf]/5' : value ? 'border-green-500' : 'border-red-400'}`}
       onDrop={handleDrop}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
