@@ -79,18 +79,9 @@ export default function RequestsList() {
     });
     // Remove null values
     const clean = Object.fromEntries(Object.entries(extracted).filter(([, v]) => v !== null && v !== undefined));
-    const created = await base44.entities.SignageRequest.create({
-      ...clean,
-      request_type: clean.request_type || "project_sign",
-      applicant_name: clean.applicant_name || "לא צוין",
-      applicant_phone: clean.applicant_phone || "לא צוין",
-      applicant_email: clean.applicant_email || "lo@lo.com",
-      site_address: clean.site_address || "לא צוין",
-      status: "draft",
-    });
-    toast.success("הבקשה נוצרה מהקובץ!");
+    toast.success("הקובץ עובד! מעביר לטופס...");
     setImporting(false);
-    navigate(`/request/${created.id}`);
+    navigate("/new-request", { state: { prefill: { ...clean, request_type: clean.request_type || "project_sign" } } });
   };
 
   const filtered = requests.filter((r) => {

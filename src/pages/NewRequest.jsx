@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,11 @@ import { jsPDF } from "jspdf";
 
 export default function NewRequest() {
   const navigate = useNavigate();
-  const [requestType, setRequestType] = useState("project_sign");
-  const [form, setForm] = useState({ fence_developer_percent: 50, fence_municipality_percent: 50 });
+  const location = useLocation();
+  const prefill = location.state?.prefill;
+  const [requestType, setRequestType] = useState(prefill?.request_type || "project_sign");
+
+  const [form, setForm] = useState(prefill ? { fence_developer_percent: 50, fence_municipality_percent: 50, ...prefill } : { fence_developer_percent: 50, fence_municipality_percent: 50 });
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
