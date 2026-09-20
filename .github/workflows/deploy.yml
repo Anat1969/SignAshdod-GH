@@ -29,12 +29,12 @@ jobs:
 
       - name: Build
         env:
-          # The Supabase anon key is public by design (protected by Row Level
-          # Security). Stored as repo secrets so they can be rotated without a
-          # code change. Set them under: Settings -> Secrets and variables ->
-          # Actions.
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          # Appwrite endpoint + project id are public by design (access is
+          # controlled by Appwrite permissions). Stored as repo secrets so they
+          # can be changed without a code edit. Set them under:
+          # Settings -> Secrets and variables -> Actions.
+          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3

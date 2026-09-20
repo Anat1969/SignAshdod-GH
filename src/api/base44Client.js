@@ -3,83 +3,132 @@
 // This project was migrated off Base44. To keep the rest of the app unchanged,
 // we expose an object with the SAME shape the code used to import from the
 // Base44 SDK (`base44.auth`, `base44.entities.*`, `base44.integrations.Core.*`),
-// but every method is now backed by Supabase (database, auth, storage).
+// but every method is now backed by Appwrite (database, auth, storage).
 //
 // Nothing here depends on Base44 anymore.
-import { supabase, STORAGE_BUCKET } from '@/api/supabaseClient';
+import { ID, Query, Permission, Role, OAuthProvider } from 'appwrite';
+import {
+  account,
+  databases,
+  storage,
+  DATABASE_ID,
+  BUCKET_ID,
+  COLLECTIONS,
+  fileViewUrl,
+} from '@/api/appwriteClient';
 
 /* ----------------------------- helpers ----------------------------- */
 
-// Base44 sort strings look like "-created_date" (desc) or "created_date" (asc).
-function parseSort(sort) {
-  if (!sort) return { column: 'created_date', ascending: false };
-  const ascending = !sort.startsWith('-');
-  const column = ascending ? sort : sort.slice(1);
-  return { column, ascending };
+// Appwrite documents carry $id / $createdAt / $updatedAt / $permissions etc.
+// The app expects `id` and `created_date`, so map them onto every row.
+function mapDoc(doc) {
+  if (!doc) return doc;
+  return { ...doc, id: doc.$id, created_date: doc.$createdAt };
 }
 
-function throwOnError(error, context) {
-  if (error) {
-    const err = new Error(error.message || `Supabase error in ${context}`);
-    err.status = error.status || error.code;
-    throw err;
+// Strip synthetic / system fields before writing back to Appwrite.
+function sanitize(data) {
+  const out = {};
+  for (const [k, v] of Object.entries(data || {})) {
+    if (k === 'id' || k === 'created_date') continue;
+    if (k.startsWith('$')) continue;
+    if (v === undefined) continue;
+    out[k] = v;
   }
+  return out;
+}
+
+// Base44 sort strings: "-created_date" (desc) / "created_date" (asc).
+// created_date maps to the built-in $createdAt attribute.
+function sortQuery(sort) {
+  if (!sort) return Query.orderDesc('$createdAt');
+  const ascending = !sort.startsWith('-');
+  let column = ascending ? sort : sort.slice(1);
+  if (column === 'created_date') column = '$createdAt';
+  return ascending ? Query.orderAsc(column) : Query.orderDesc(column);
+}
+
+async function currentAccount() {
+  return account.get();
 }
 
 /* ----------------------------- entities ---------------------------- */
 
-function makeEntity(table) {
+function makeEntity(collectionId) {
   return {
-    // list(sort, limit) — return all rows, ordered + limited.
     async list(sort, limit) {
-      const { column, ascending } = parseSort(sort);
-      let q = supabase.from(table).select('*').order(column, { ascending });
-      if (limit) q = q.limit(limit);
-      const { data, error } = await q;
-      throwOnError(error, `${table}.list`);
-      return data || [];
+      const queries = [sortQuery(sort)];
+      if (limit) queries.push(Query.limit(limit));
+      const res = await databases.listDocuments(DATABASE_ID, collectionId, queries);
+      return res.documents.map(mapDoc);
     },
 
-    // filter(query, sort, limit) — query is an object of equality conditions.
     async filter(query = {}, sort, limit) {
-      let q = supabase.from(table).select('*');
-      for (const [key, value] of Object.entries(query)) {
-        q = q.eq(key, value);
+      // Special-case a lookup by id -> fetch the single document.
+      const keys = Object.keys(query);
+      if (keys.length === 1 && keys[0] === 'id') {
+        try {
+          const doc = await databases.getDocument(DATABASE_ID, collectionId, query.id);
+          return [mapDoc(doc)];
+        } catch {
+          return [];
+        }
       }
-      const { column, ascending } = parseSort(sort);
-      q = q.order(column, { ascending });
-      if (limit) q = q.limit(limit);
-      const { data, error } = await q;
-      throwOnError(error, `${table}.filter`);
-      return data || [];
+      const queries = [];
+      for (const [key, value] of Object.entries(query)) {
+        queries.push(Query.equal(key === 'id' ? '$id' : key, value));
+      }
+      queries.push(sortQuery(sort));
+      if (limit) queries.push(Query.limit(limit));
+      const res = await databases.listDocuments(DATABASE_ID, collectionId, queries);
+      return res.documents.map(mapDoc);
     },
 
-    // get(id) — single row by id.
     async get(id) {
-      const { data, error } = await supabase.from(table).select('*').eq('id', id).single();
-      throwOnError(error, `${table}.get`);
-      return data;
+      const doc = await databases.getDocument(DATABASE_ID, collectionId, id);
+      return mapDoc(doc);
     },
 
-    // create(data) — insert one row, return the created row.
-    // created_by / created_date are set authoritatively by DB triggers.
     async create(data) {
-      const { data: row, error } = await supabase.from(table).insert(data).select().single();
-      throwOnError(error, `${table}.create`);
-      return row;
+      const me = await currentAccount();
+      const payload = sanitize(data);
+      payload.created_by = me.email;
+      payload.owner_id = me.$id;
+
+      // Per-document permissions: the owner can read & update their own row;
+      // admins are granted collection-level access at setup time.
+      const permissions = [
+        Permission.read(Role.user(me.$id)),
+        Permission.update(Role.user(me.$id)),
+      ];
+
+      // For notes, also let the applicant (owner of the parent request) read them.
+      if (collectionId === COLLECTIONS.RequestNote && payload.request_id) {
+        try {
+          const parent = await databases.getDocument(
+            DATABASE_ID, COLLECTIONS.SignageRequest, payload.request_id
+          );
+          if (parent.owner_id && parent.owner_id !== me.$id) {
+            permissions.push(Permission.read(Role.user(parent.owner_id)));
+          }
+        } catch { /* parent unreadable — admin-only note */ }
+      }
+
+      const doc = await databases.createDocument(
+        DATABASE_ID, collectionId, ID.unique(), payload, permissions
+      );
+      return mapDoc(doc);
     },
 
-    // update(id, data) — patch one row by id, return the updated row.
     async update(id, data) {
-      const { data: row, error } = await supabase.from(table).update(data).eq('id', id).select().single();
-      throwOnError(error, `${table}.update`);
-      return row;
+      const doc = await databases.updateDocument(
+        DATABASE_ID, collectionId, id, sanitize(data)
+      );
+      return mapDoc(doc);
     },
 
-    // delete(id) — remove one row by id.
     async delete(id) {
-      const { error } = await supabase.from(table).delete().eq('id', id);
-      throwOnError(error, `${table}.delete`);
+      await databases.deleteDocument(DATABASE_ID, collectionId, id);
       return true;
     },
   };
@@ -87,33 +136,21 @@ function makeEntity(table) {
 
 /* ------------------------------- auth ------------------------------ */
 
-// Shape a Supabase session user + profile into the user object the app expects
-// ({ id, email, full_name, role }). Throws when nobody is signed in, matching
-// the old base44.auth.me() contract (callers use try/catch).
 async function me() {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
+  let user;
+  try {
+    user = await account.get();
+  } catch (e) {
     const err = new Error('Not authenticated');
     err.status = 401;
     throw err;
   }
-
-  // role lives in the `profiles` table; fall back to 'user' if the row is not
-  // ready yet (it is created by a trigger on first sign-in).
-  let role = 'user';
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (profile?.role) role = profile.role;
-
-  const meta = user.user_metadata || {};
+  const labels = user.labels || [];
   return {
-    id: user.id,
+    id: user.$id,
     email: user.email,
-    full_name: profile?.full_name || meta.full_name || meta.name || user.email,
-    role,
+    full_name: user.name || user.email,
+    role: labels.includes('admin') ? 'admin' : 'user',
   };
 }
 
@@ -124,47 +161,47 @@ const auth = {
     return auth.redirectToLogin();
   },
 
-  async redirectToLogin(redirectTo) {
-    const target = redirectTo || (window.location.origin + import.meta.env.BASE_URL);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: target },
-    });
-    throwOnError(error, 'auth.redirectToLogin');
+  // OAuth2 *token* flow (not the session/cookie flow): avoids third-party
+  // cookie problems when the app is hosted on a different domain (GitHub Pages)
+  // than Appwrite. Returns to `success` with ?userId=&secret=, which
+  // AuthContext exchanges for a session.
+  async redirectToLogin() {
+    const base = window.location.origin + import.meta.env.BASE_URL;
+    account.createOAuth2Token(OAuthProvider.Google, base, base);
   },
 
-  async logout(redirectTo) {
-    await supabase.auth.signOut();
-    if (redirectTo !== undefined) {
-      window.location.href = window.location.origin + import.meta.env.BASE_URL;
-    }
+  async logout() {
+    try {
+      await account.deleteSession('current');
+    } catch { /* already signed out */ }
+    window.location.href = window.location.origin + import.meta.env.BASE_URL;
   },
 };
 
 /* --------------------------- integrations -------------------------- */
 
 const Core = {
-  // Upload a file to Supabase Storage and return its public URL.
+  // Upload to Appwrite Storage; return a public "view" URL.
   async UploadFile({ file }) {
-    const ext = file.name?.split('.').pop() || 'bin';
-    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-    throwOnError(error, 'UploadFile');
-    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-    return { file_url: data.publicUrl };
+    let permissions;
+    try {
+      const me = await account.get();
+      permissions = [Permission.read(Role.any()), Permission.update(Role.user(me.$id))];
+    } catch {
+      permissions = [Permission.read(Role.any())];
+    }
+    const created = await storage.createFile(BUCKET_ID, ID.unique(), file, permissions);
+    return { file_url: fileViewUrl(created.$id) };
   },
 
-  // Deferred to a later phase (needs a server-side email provider + API key).
-  // Resolves quietly so status flows that call it still complete.
+  // Deferred (needs a server-side email provider + API key). Resolves quietly
+  // so status flows that call it still complete.
   async SendEmail(payload) {
     console.warn('[SendEmail] deferred — email sending is not configured yet.', payload);
     return { success: false, deferred: true };
   },
 
-  // Deferred to a later phase (needs a server-side LLM provider + API key).
+  // Deferred (needs a server-side LLM provider + API key).
   async InvokeLLM() {
     const err = new Error('חילוץ נתונים עם AI יתווסף בשלב הבא ואינו זמין כרגע.');
     err.deferred = true;
@@ -177,8 +214,8 @@ const Core = {
 export const base44 = {
   auth,
   entities: {
-    SignageRequest: makeEntity('signage_requests'),
-    RequestNote: makeEntity('request_notes'),
+    SignageRequest: makeEntity(COLLECTIONS.SignageRequest),
+    RequestNote: makeEntity(COLLECTIONS.RequestNote),
   },
   integrations: { Core },
 };
