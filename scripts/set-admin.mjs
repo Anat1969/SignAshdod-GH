@@ -1,14 +1,12 @@
 /*
- * Grant (or revoke) the `admin` role to a user by email.
- * The user must have signed in at least once so their account exists.
+ * Grant (or revoke) the `admin` role to a user by email — via the REST API.
+ * The user must have signed in to the app at least once so their account exists.
  *
  * Usage:
  *   APPWRITE_ENDPOINT=... APPWRITE_PROJECT_ID=... APPWRITE_API_KEY=... \
  *     node scripts/set-admin.mjs someone@example.com [--remove]
  */
-import { Client, Users, Query } from 'node-appwrite';
-
-const endpoint = process.env.APPWRITE_ENDPOINT;
+const endpoint = (process.env.APPWRITE_ENDPOINT || '').replace(/\/$/, '');
 const projectId = process.env.APPWRITE_PROJECT_ID;
 const apiKey = process.env.APPWRITE_API_KEY;
 const email = process.argv[2];
@@ -19,20 +17,33 @@ if (!endpoint || !projectId || !apiKey || !email) {
   process.exit(1);
 }
 
-const client = new Client().setEndpoint(endpoint).setProject(projectId).setKey(apiKey);
-const users = new Users(client);
+async function api(method, path, body) {
+  const res = await fetch(`${endpoint}${path}`, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': projectId,
+      'X-Appwrite-Key': apiKey,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message || `HTTP ${res.status}`);
+  return data;
+}
 
 async function main() {
-  const res = await users.list([Query.equal('email', email)]);
-  if (!res.users.length) {
-    console.error(`No user found with email ${email}. Ask them to sign in once first.`);
+  const q = encodeURIComponent(JSON.stringify({ method: 'equal', attribute: 'email', values: [email] }));
+  const res = await api('GET', `/users?queries[]=${q}`);
+  if (!res.users || !res.users.length) {
+    console.error(`No user found with email ${email}. Ask them to sign in to the app once first.`);
     process.exit(1);
   }
   const user = res.users[0];
-  const current = new Set(user.labels || []);
-  if (remove) current.delete('admin'); else current.add('admin');
-  await users.updateLabels(user.$id, [...current]);
-  console.log(`${remove ? 'Removed admin from' : 'Granted admin to'} ${email} (${user.$id}). Labels:`, [...current]);
+  const labels = new Set(user.labels || []);
+  if (remove) labels.delete('admin'); else labels.add('admin');
+  await api('PUT', `/users/${user.$id}/labels`, { labels: [...labels] });
+  console.log(`${remove ? 'Removed admin from' : 'Granted admin to'} ${email} (${user.$id}). Labels:`, [...labels]);
 }
 
 main().catch((e) => { console.error('Failed:', e.message || e); process.exit(1); });
