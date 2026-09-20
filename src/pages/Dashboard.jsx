@@ -7,8 +7,7 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   ArrowLeft,
-  FileText,
-  TrendingUp
+  FileText
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,24 +16,31 @@ import StatusBadge from "../components/StatusBadge";
 export default function Dashboard() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const load = async () => {
-      const me = await base44.auth.me();
-      setUser(me);
-      let data;
-      if (me.role === "admin") {
-        data = await base44.entities.SignageRequest.list("-created_date", 50);
-      } else {
-        data = await base44.entities.SignageRequest.filter(
-          { created_by: me.email },
-          "-created_date",
-          50
-        );
+      try {
+        const me = await base44.auth.me();
+        setUser(me);
+        let data;
+        if (me.role === "admin") {
+          data = await base44.entities.SignageRequest.list("-created_date", 50);
+        } else {
+          data = await base44.entities.SignageRequest.filter(
+            { created_by: me.email },
+            "-created_date",
+            50
+          );
+        }
+        setRequests(data);
+      } catch (err) {
+        console.error(err);
+        setError(true);
+      } finally {
+        setLoading(false);
       }
-      setRequests(data);
-      setLoading(false);
     };
     load();
   }, []);
@@ -55,6 +61,16 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+        <AlertTriangle className="w-10 h-10 text-orange-500" />
+        <p className="text-muted-foreground">אירעה שגיאה בטעינת הנתונים</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>נסה שוב</Button>
       </div>
     );
   }

@@ -9,7 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import {
   ArrowRight,
-  Send,
   Loader2,
   MessageSquarePlus,
   CheckCircle2,
@@ -42,17 +41,23 @@ export default function RequestDetails() {
 
   useEffect(() => {
     const load = async () => {
-      const me = await base44.auth.me();
-      setUser(me);
-      const reqs = await base44.entities.SignageRequest.filter({ id });
-      if (reqs.length > 0) setRequest(reqs[0]);
-      const allNotes = await base44.entities.RequestNote.filter(
-        { request_id: id },
-        "-created_date",
-        50
-      );
-      setNotes(allNotes);
-      setLoading(false);
+      try {
+        const me = await base44.auth.me();
+        setUser(me);
+        const reqs = await base44.entities.SignageRequest.filter({ id });
+        if (reqs.length > 0) setRequest(reqs[0]);
+        const allNotes = await base44.entities.RequestNote.filter(
+          { request_id: id },
+          "-created_date",
+          50
+        );
+        setNotes(allNotes);
+      } catch (err) {
+        console.error(err);
+        toast.error("אירעה שגיאה בטעינת הבקשה");
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [id]);
@@ -62,85 +67,79 @@ export default function RequestDetails() {
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
     setAddingNote(true);
-    const note = await base44.entities.RequestNote.create({
-      request_id: id,
-      note_text: noteText,
-      note_type: noteType,
-    });
-    setNotes([note, ...notes]);
-    setNoteText("");
-    toast.success("ההערה נוספה");
-    setAddingNote(false);
+    try {
+      const note = await base44.entities.RequestNote.create({
+        request_id: id,
+        note_text: noteText,
+        note_type: noteType,
+      });
+      setNotes([note, ...notes]);
+      setNoteText("");
+      toast.success("ההערה נוספה");
+    } catch (err) {
+      console.error(err);
+      toast.error("שמירת ההערה נכשלה");
+    } finally {
+      setAddingNote(false);
+    }
   };
 
   const handleStatusChange = async (newStatus) => {
     setUpdatingStatus(true);
-    await base44.entities.SignageRequest.update(id, { status: newStatus });
-    setRequest({ ...request, status: newStatus });
-    toast.success("הסטטוס עודכן");
-    setUpdatingStatus(false);
+    try {
+      await base44.entities.SignageRequest.update(id, { status: newStatus });
+      setRequest({ ...request, status: newStatus });
+      toast.success("הסטטוס עודכן");
+    } catch (err) {
+      console.error(err);
+      toast.error("עדכון הסטטוס נכשל");
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
+  // Share notes with the applicant. In the current phase the applicant sees the
+  // notes in their own portal (they have read access to notes on their request),
+  // and the request is marked as needing revision. Automatic email notification
+  // is deferred to a later phase.
   const handleSendNotesToApplicant = async () => {
     setSendingEmail(true);
-    const unsentNotes = notes.filter((n) => !n.sent_to_applicant);
-    if (unsentNotes.length === 0) {
-      toast.info("אין הערות חדשות לשליחה");
+    try {
+      const unsentNotes = notes.filter((n) => !n.sent_to_applicant);
+      if (unsentNotes.length === 0) {
+        toast.info("אין הערות חדשות להעברה");
+        return;
+      }
+
+      // Mark notes as shared with the applicant.
+      for (const n of unsentNotes) {
+        await base44.entities.RequestNote.update(n.id, { sent_to_applicant: true });
+      }
+      setNotes(
+        notes.map((n) =>
+          unsentNotes.find((un) => un.id === n.id)
+            ? { ...n, sent_to_applicant: true }
+            : n
+        )
+      );
+
+      if (request.status === "submitted" || request.status === "under_review") {
+        await base44.entities.SignageRequest.update(id, { status: "needs_revision" });
+        setRequest({ ...request, status: "needs_revision" });
+      }
+
+      toast.success("ההערות הועברו למבקש (יופיעו אצלו במערכת)");
+    } catch (err) {
+      console.error(err);
+      toast.error("העברת ההערות נכשלה");
+    } finally {
       setSendingEmail(false);
-      return;
     }
-
-    const notesHtml = unsentNotes
-      .map((n) => {
-        const typeLabel = {
-          general: "הערה כללית",
-          missing_document: "מסמך חסר",
-          correction_needed: "נדרש תיקון",
-          approval: "אישור",
-          rejection: "דחייה",
-        }[n.note_type] || "הערה";
-        return `<li><strong>${typeLabel}:</strong> ${n.note_text}</li>`;
-      })
-      .join("");
-
-    await base44.integrations.Core.SendEmail({
-      to: request.applicant_email,
-      subject: `הערות לבקשת שילוט - ${request.site_address}`,
-      body: `
-        <div dir="rtl" style="font-family: Arial, sans-serif;">
-          <h2>הערות לבקשת שילוט</h2>
-          <p>שלום ${request.applicant_name},</p>
-          <p>נמצאו הערות לבקשת השילוט שלך בכתובת: <strong>${request.site_address}</strong></p>
-          <ul>${notesHtml}</ul>
-          <p>נא לטפל בהערות ולעדכן את הבקשה.</p>
-          <p>בברכה,<br/>אגף אדריכל העיר, עיריית אשדוד</p>
-        </div>
-      `,
-    });
-
-    // Mark notes as sent
-    for (const n of unsentNotes) {
-      await base44.entities.RequestNote.update(n.id, { sent_to_applicant: true });
-    }
-    setNotes(
-      notes.map((n) =>
-        unsentNotes.find((un) => un.id === n.id)
-          ? { ...n, sent_to_applicant: true }
-          : n
-      )
-    );
-
-    if (request.status === "submitted" || request.status === "under_review") {
-      await base44.entities.SignageRequest.update(id, { status: "needs_revision" });
-      setRequest({ ...request, status: "needs_revision" });
-    }
-
-    toast.success("ההערות נשלחו למבקש בהצלחה");
-    setSendingEmail(false);
   };
 
   const handleApprove = async () => {
     setUpdatingStatus(true);
+    try {
     await base44.entities.SignageRequest.update(id, {
       status: "approved",
       approval_date: new Date().toISOString().split("T")[0],
@@ -182,8 +181,13 @@ export default function RequestDetails() {
     });
 
     setRequest({ ...request, status: "approved" });
-    toast.success("הבקשה אושרה ונשלח מייל לזימון ועדת שילוט");
-    setUpdatingStatus(false);
+    toast.success("הבקשה אושרה");
+    } catch (err) {
+      console.error(err);
+      toast.error("אישור הבקשה נכשל");
+    } finally {
+      setUpdatingStatus(false);
+    }
   };
 
   if (loading) {
@@ -297,7 +301,7 @@ export default function RequestDetails() {
                   disabled={sendingEmail}
                 >
                   {sendingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Mail className="w-3 h-3" />}
-                  שלח הערות למבקש
+                  העבר הערות למבקש
                 </Button>
               )}
             </CardHeader>
@@ -395,7 +399,7 @@ export default function RequestDetails() {
                   disabled={sendingEmail}
                 >
                   {sendingEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                  שלח הערות במייל
+                  העבר הערות למבקש
                 </Button>
               </CardContent>
             </Card>

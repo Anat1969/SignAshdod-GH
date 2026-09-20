@@ -10,8 +10,6 @@ import ProjectSignForm from "../components/ProjectSignForm";
 import TalkingFenceForm from "../components/TalkingFenceForm";
 import SignPreview from "../components/SignPreview";
 import ExtractedDataPreview from "../components/ExtractedDataPreview";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
 
 export default function NewRequest() {
   const navigate = useNavigate();
@@ -98,16 +96,27 @@ export default function NewRequest() {
   const exportToPdf = async () => {
     if (!previewRef.current) return;
     setExporting(true);
-    const canvas = await html2canvas(previewRef.current, { scale: 3, useCORS: true });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const imgH = (canvas.height * pageW) / canvas.width;
-    const yOffset = (pageH - imgH) / 2;
-    pdf.addImage(imgData, "PNG", 0, yOffset > 0 ? yOffset : 0, pageW, imgH);
-    pdf.save("שלט-פרויקט.pdf");
-    setExporting(false);
+    try {
+      // Loaded on demand so these large libraries stay out of the initial bundle.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+      const canvas = await html2canvas(previewRef.current, { scale: 3, useCORS: true });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgH = (canvas.height * pageW) / canvas.width;
+      const yOffset = (pageH - imgH) / 2;
+      pdf.addImage(imgData, "PNG", 0, yOffset > 0 ? yOffset : 0, pageW, imgH);
+      pdf.save("שלט-פרויקט.pdf");
+    } catch (err) {
+      toast.error("ייצוא ה-PDF נכשל");
+      console.error(err);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (

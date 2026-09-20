@@ -20,20 +20,26 @@ export default function RequestsList() {
 
   useEffect(() => {
     const load = async () => {
-      const me = await base44.auth.me();
-      setUser(me);
-      let data;
-      if (me.role === "admin") {
-        data = await base44.entities.SignageRequest.list("-created_date", 100);
-      } else {
-        data = await base44.entities.SignageRequest.filter(
-          { created_by: me.email },
-          "-created_date",
-          100
-        );
+      try {
+        const me = await base44.auth.me();
+        setUser(me);
+        let data;
+        if (me.role === "admin") {
+          data = await base44.entities.SignageRequest.list("-created_date", 100);
+        } else {
+          data = await base44.entities.SignageRequest.filter(
+            { created_by: me.email },
+            "-created_date",
+            100
+          );
+        }
+        setRequests(data);
+      } catch (err) {
+        console.error(err);
+        toast.error("אירעה שגיאה בטעינת הבקשות");
+      } finally {
+        setLoading(false);
       }
-      setRequests(data);
-      setLoading(false);
     };
     load();
   }, []);

@@ -1,6 +1,5 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { AlertCircle } from "lucide-react";
 
 export default function ExtractedDataPreview({ form, onChange }) {

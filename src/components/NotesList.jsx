@@ -1,4 +1,4 @@
-import { CheckCircle2, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
 const noteTypeLabels = {
   general: { label: "הערה כללית", color: "bg-slate-100 text-slate-700" },
