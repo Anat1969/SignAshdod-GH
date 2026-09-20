@@ -1,39 +1,58 @@
-**Welcome to your Base44 project** 
+# שילוט אשדוד — מערכת ניהול בקשות שילוט
 
-**About**
+מערכת לניהול בקשות שילוט באתרי בנייה (שלט פרויקט / גדר מדברת) עבור עיריית אשדוד.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+האפליקציה **אינה תלויה עוד ב-Base44**. היא בנויה כ-SPA (React + Vite) ומתארחת ב-GitHub Pages,
+עם Supabase כשרת (מסד נתונים PostgreSQL, התחברות, ואחסון קבצים).
 
-This project contains everything you need to run your app locally.
+## ארכיטקטורה
 
-**Edit the code in your local development environment**
+| רכיב | טכנולוגיה |
+| --- | --- |
+| Frontend | React 18 + Vite + Tailwind + shadcn/ui |
+| אירוח | GitHub Pages (דרך GitHub Actions) |
+| מסד נתונים | Supabase (PostgreSQL) |
+| התחברות | Supabase Auth — Google OAuth |
+| אחסון קבצים | Supabase Storage |
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+> חילוץ נתונים ממסמך עם AI ושליחת מיילים אוטומטיים **נדחו לשלב הבא** (דורשים מפתחות API בתשלום).
+> הקוד מוכן לחיבורם בעתיד (`src/api/base44Client.js` → `integrations.Core.InvokeLLM` / `SendEmail`).
 
-**Prerequisites:** 
+## פיתוח מקומי
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+```bash
+npm install
+cp .env.example .env.local   # ומלאו את הערכים מ-Supabase (Settings -> API)
+npm run dev
+```
+
+משתני סביבה (`.env.local`):
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_ANON_PUBLIC_KEY
 ```
 
-Run the app: `npm run dev`
+## פרסום (GitHub Pages)
 
-**Publish your changes**
+הפרסום אוטומטי: כל `push` ל-`main` מריץ את `.github/workflows/deploy.yml` שבונה ומפרסם.
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+הגדרה חד-פעמית:
+1. ב-GitHub: **Settings → Pages → Build and deployment → Source = GitHub Actions**.
+2. ב-GitHub: **Settings → Secrets and variables → Actions** — הוסיפו:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   (מפתח ה-anon של Supabase הוא ציבורי מעצם טבעו ומוגן ע"י Row Level Security.)
 
-**Docs & Support**
+הכתובת הציבורית: `https://anat1969.github.io/SignAshdod-GH/`
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+> אם משנים את שם ה-repo או עוברים לדומיין מותאם — עדכנו את `base` ב-`vite.config.js`
+> ואת כתובת ההפניה ב-`public/404.html`.
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+## מבנה הנתונים (Supabase)
+
+- `profiles` — פרופיל לכל משתמש (`role`: `admin` / `user`, נוצר אוטומטית בהתחברות ראשונה).
+- `signage_requests` — בקשות השילוט.
+- `request_notes` — הערות בודק לכל בקשה.
+
+הרשאות (RLS): מבקש רואה ומעדכן רק את הבקשות שלו; `admin` (צוות עירייה) רואה ומנהל הכול.

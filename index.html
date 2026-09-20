@@ -2,10 +2,24 @@
 <html lang="he" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/manifest.json" />
-    <title>Base44 APP</title>
+    <meta name="description" content="מערכת ניהול בקשות שילוט - עיריית אשדוד" />
+    <title>שילוט אשדוד</title>
+    <!--
+      GitHub Pages SPA fallback: 404.html stores the requested path in the URL
+      query string; this snippet restores it into history before the app boots,
+      so deep links / refreshes work with client-side routing.
+    -->
+    <script>
+      (function () {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -42,6 +42,7 @@ export default function RequestsList() {
     const file = e.target.files[0];
     if (!file) return;
     setImporting(true);
+    try {
     toast.info("מעבד את הקובץ...");
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
     const extracted = await base44.integrations.Core.InvokeLLM({
@@ -108,6 +109,12 @@ export default function RequestsList() {
     toast.success("הקובץ עובד! מעביר לטופס...");
     setImporting(false);
     navigate("/new-request");
+    } catch (err) {
+      setImporting(false);
+      toast.error(err?.message || "אירעה שגיאה בעיבוד הקובץ");
+    } finally {
+      if (importRef.current) importRef.current.value = "";
+    }
   };
 
   const filtered = requests.filter((r) => {

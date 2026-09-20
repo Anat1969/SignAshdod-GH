@@ -1,12 +1,12 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { 
-  LayoutDashboard, 
-  FilePlus, 
-  List, 
-  Menu, 
-  X, 
+import { useState } from "react";
+import { useAuth } from "@/lib/AuthContext";
+import {
+  LayoutDashboard,
+  FilePlus,
+  List,
+  Menu,
+  X,
   LogOut,
   Building2
 } from "lucide-react";
@@ -21,11 +21,7 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-  }, []);
+  const { user, logout } = useAuth();
 
   const isAdmin = user?.role === "admin";
 
@@ -83,6 +79,17 @@ export default function Layout() {
                   </div>
                 </div>
               )}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="hidden sm:flex"
+                  title="התנתקות"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -117,6 +124,15 @@ export default function Layout() {
                 </Link>
               );
             })}
+            {user && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); logout(); }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-all mt-1"
+              >
+                <LogOut className="w-4 h-4" />
+                התנתקות
+              </button>
+            )}
           </div>
         )}
       </header>
