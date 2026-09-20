@@ -12,7 +12,7 @@
 | Frontend | React 18 + Vite + Tailwind + shadcn/ui |
 | אירוח | GitHub Pages (דרך GitHub Actions) |
 | מסד נתונים / אחסון / התחברות | Appwrite Cloud |
-| התחברות | Appwrite Auth — Google OAuth |
+| התחברות | Appwrite Auth — קוד חד-פעמי למייל (Email OTP) |
 
 > חילוץ נתונים ממסמך עם AI ושליחת מיילים אוטומטיים **נדחו לשלב הבא** (דורשים מפתחות API בתשלום).
 > הקוד מוכן לחיבורם בעתיד (`src/api/base44Client.js` → `integrations.Core.InvokeLLM` / `SendEmail`).
@@ -41,8 +41,7 @@ VITE_APPWRITE_PROJECT_ID=YOUR_PROJECT_ID
    APPWRITE_ENDPOINT=... APPWRITE_PROJECT_ID=... APPWRITE_API_KEY=... node scripts/setup-appwrite.mjs
    ```
 4. מוסיפים Web Platform בקונסולה עם ה-hostname של האתר (`anat1969.github.io`) ושל הפיתוח (`localhost`).
-5. מפעילים את ספק ה-OAuth של Google (Auth → Settings → Google) עם מפתחות Google OAuth.
-6. הופכים משתמש/ים לאדמין (לאחר התחברות ראשונה שלהם):
+5. הופכים משתמש/ים לאדמין (לאחר התחברות ראשונה שלהם):
    ```bash
    APPWRITE_ENDPOINT=... APPWRITE_PROJECT_ID=... APPWRITE_API_KEY=... node scripts/set-admin.mjs email@example.com
    ```

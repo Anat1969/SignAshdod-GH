@@ -6,7 +6,7 @@
 // but every method is now backed by Appwrite (database, auth, storage).
 //
 // Nothing here depends on Base44 anymore.
-import { ID, Query, Permission, Role, OAuthProvider } from 'appwrite';
+import { ID, Query, Permission, Role } from 'appwrite';
 import {
   account,
   databases,
@@ -157,17 +157,17 @@ async function me() {
 const auth = {
   me,
 
-  async login() {
-    return auth.redirectToLogin();
+  // Email OTP login (no passwords, no external provider setup).
+  // Step 1: send a 6-digit code to the given email. Returns the userId that
+  // must be paired with the code in step 2.
+  async sendEmailCode(email) {
+    const token = await account.createEmailToken(ID.unique(), email);
+    return token.userId;
   },
 
-  // OAuth2 *token* flow (not the session/cookie flow): avoids third-party
-  // cookie problems when the app is hosted on a different domain (GitHub Pages)
-  // than Appwrite. Returns to `success` with ?userId=&secret=, which
-  // AuthContext exchanges for a session.
-  async redirectToLogin() {
-    const base = window.location.origin + import.meta.env.BASE_URL;
-    account.createOAuth2Token(OAuthProvider.Google, base, base);
+  // Step 2: exchange the userId + the code the user typed for a session.
+  async verifyEmailCode(userId, code) {
+    return account.createSession(userId, code);
   },
 
   async logout() {

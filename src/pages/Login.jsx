@@ -1,18 +1,50 @@
 import { useState } from 'react';
-import { Building2, Loader2 } from 'lucide-react';
+import { Building2, Loader2, Mail, ArrowRight } from 'lucide-react';
 import AuthLayout from '@/components/AuthLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/AuthContext';
+import { base44 } from '@/api/base44Client';
 
 export default function Login() {
-  const { signInWithGoogle } = useAuth();
+  const { reloadUser } = useAuth();
+  const [step, setStep] = useState('email'); // 'email' | 'code'
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = async () => {
+  const sendCode = async (e) => {
+    e?.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) return;
     setLoading(true);
+    setError('');
     try {
-      await signInWithGoogle();
-    } catch (e) {
-      console.error(e);
+      const id = await base44.auth.sendEmailCode(trimmed);
+      setUserId(id);
+      setStep('code');
+    } catch (err) {
+      console.error(err);
+      setError('שליחת הקוד נכשלה. בדקו את כתובת המייל ונסו שוב.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async (e) => {
+    e?.preventDefault();
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setError('');
+    try {
+      await base44.auth.verifyEmailCode(userId, trimmed);
+      await reloadUser(); // flips the app to the authenticated view
+    } catch (err) {
+      console.error(err);
+      setError('הקוד שגוי או שפג תוקפו. נסו שוב.');
       setLoading(false);
     }
   };
@@ -24,28 +56,64 @@ export default function Login() {
         title="עיריית אשדוד"
         subtitle="מערכת ניהול בקשות שילוט"
       >
-        <div className="space-y-6">
-          <p className="text-center text-sm text-muted-foreground">
-            התחברו כדי להגיש בקשה חדשה או לעקוב אחרי בקשות קיימות.
-          </p>
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full h-12 flex items-center justify-center gap-3 rounded-lg border border-border bg-card font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-60"
-          >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1Z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
-                <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z" />
-              </svg>
-            )}
-            התחברות עם Google
-          </button>
-        </div>
+        {step === 'email' ? (
+          <form onSubmit={sendCode} className="space-y-4">
+            <p className="text-center text-sm text-muted-foreground">
+              הזינו כתובת מייל ונשלח אליכם קוד כניסה חד-פעמי.
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">כתובת מייל</label>
+              <Input
+                type="email"
+                inputMode="email"
+                dir="ltr"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoFocus
+                required
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" disabled={loading} className="w-full h-12 gap-2">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Mail className="w-5 h-5" />}
+              שליחת קוד כניסה
+            </Button>
+          </form>
+        ) : (
+          <form onSubmit={verifyCode} className="space-y-4">
+            <p className="text-center text-sm text-muted-foreground">
+              שלחנו קוד בן 6 ספרות אל<br />
+              <span className="font-medium text-foreground" dir="ltr">{email}</span>
+            </p>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">קוד הכניסה</label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                dir="ltr"
+                placeholder="______"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                className="text-center text-2xl tracking-[0.4em]"
+                autoFocus
+                required
+              />
+            </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" disabled={loading} className="w-full h-12 gap-2">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+              כניסה
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setStep('email'); setCode(''); setError(''); }}
+              className="w-full text-sm text-muted-foreground hover:text-foreground"
+            >
+              שינוי כתובת המייל
+            </button>
+          </form>
+        )}
       </AuthLayout>
     </div>
   );
