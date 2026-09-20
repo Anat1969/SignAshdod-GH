@@ -1,4 +1,4 @@
-import { Client, Account, Databases, Storage } from 'appwrite';
+import { Client, Account, TablesDB, Storage } from 'appwrite';
 
 // Public config — safe to ship in a client build. Access is controlled by
 // Appwrite permissions on the server, not by hiding these values.
@@ -24,7 +24,7 @@ export const client = new Client()
   .setProject(APPWRITE_PROJECT_ID);
 
 export const account = new Account(client);
-export const databases = new Databases(client);
+export const tablesDB = new TablesDB(client);
 export const storage = new Storage(client);
 
 // Direct public "view" URL for a stored file (bucket read is public).

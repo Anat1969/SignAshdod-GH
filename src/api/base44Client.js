@@ -9,7 +9,7 @@
 import { ID, Query, Permission, Role } from 'appwrite';
 import {
   account,
-  databases,
+  tablesDB,
   storage,
   DATABASE_ID,
   BUCKET_ID,
@@ -59,8 +59,8 @@ function makeEntity(collectionId) {
     async list(sort, limit) {
       const queries = [sortQuery(sort)];
       if (limit) queries.push(Query.limit(limit));
-      const res = await databases.listDocuments(DATABASE_ID, collectionId, queries);
-      return res.documents.map(mapDoc);
+      const res = await tablesDB.listRows(DATABASE_ID, collectionId, queries);
+      return res.rows.map(mapDoc);
     },
 
     async filter(query = {}, sort, limit) {
@@ -68,7 +68,7 @@ function makeEntity(collectionId) {
       const keys = Object.keys(query);
       if (keys.length === 1 && keys[0] === 'id') {
         try {
-          const doc = await databases.getDocument(DATABASE_ID, collectionId, query.id);
+          const doc = await tablesDB.getRow(DATABASE_ID, collectionId, query.id);
           return [mapDoc(doc)];
         } catch {
           return [];
@@ -80,12 +80,12 @@ function makeEntity(collectionId) {
       }
       queries.push(sortQuery(sort));
       if (limit) queries.push(Query.limit(limit));
-      const res = await databases.listDocuments(DATABASE_ID, collectionId, queries);
-      return res.documents.map(mapDoc);
+      const res = await tablesDB.listRows(DATABASE_ID, collectionId, queries);
+      return res.rows.map(mapDoc);
     },
 
     async get(id) {
-      const doc = await databases.getDocument(DATABASE_ID, collectionId, id);
+      const doc = await tablesDB.getRow(DATABASE_ID, collectionId, id);
       return mapDoc(doc);
     },
 
@@ -105,7 +105,7 @@ function makeEntity(collectionId) {
       // For notes, also let the applicant (owner of the parent request) read them.
       if (collectionId === COLLECTIONS.RequestNote && payload.request_id) {
         try {
-          const parent = await databases.getDocument(
+          const parent = await tablesDB.getRow(
             DATABASE_ID, COLLECTIONS.SignageRequest, payload.request_id
           );
           if (parent.owner_id && parent.owner_id !== me.$id) {
@@ -114,21 +114,21 @@ function makeEntity(collectionId) {
         } catch { /* parent unreadable — admin-only note */ }
       }
 
-      const doc = await databases.createDocument(
+      const doc = await tablesDB.createRow(
         DATABASE_ID, collectionId, ID.unique(), payload, permissions
       );
       return mapDoc(doc);
     },
 
     async update(id, data) {
-      const doc = await databases.updateDocument(
+      const doc = await tablesDB.updateRow(
         DATABASE_ID, collectionId, id, sanitize(data)
       );
       return mapDoc(doc);
     },
 
     async delete(id) {
-      await databases.deleteDocument(DATABASE_ID, collectionId, id);
+      await tablesDB.deleteRow(DATABASE_ID, collectionId, id);
       return true;
     },
   };
