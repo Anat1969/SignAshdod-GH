@@ -15,11 +15,20 @@ export function distanceMeters(a, b) {
   return 2 * R * Math.asin(Math.sqrt(s))
 }
 
-// אזור האופי בנקודה: האזור בעדיפות הגבוהה ביותר שמכיל אותה.
+// אזור האופי בנקודה. אזור עם גבול מסומן (חוף, נחל) גובר. אחרת: הרובע שמרכזו הקרוב ביותר,
+// כי גבולות הרובעים במסד הם מלבנים משוערים ולא גבולות אמיתיים.
+export const isQuarter = (z) => z.kind === 'quarter' && Array.isArray(z.center)
 export function zoneAt(lngLat, zones) {
-  const hits = zones.filter((z) => pointInPolygon(lngLat, z.polygon))
-  hits.sort((a, b) => (b.priority || 1) - (a.priority || 1))
-  return hits[0] || null
+  const shaped = zones.filter((z) => !isQuarter(z) && z.polygon && pointInPolygon(lngLat, z.polygon))
+  shaped.sort((a, b) => (b.priority || 1) - (a.priority || 1))
+  if (shaped[0]) return shaped[0]
+  let best = null, bestD = Infinity
+  for (const z of zones) {
+    if (!isQuarter(z)) continue
+    const d = distanceMeters(lngLat, z.center)
+    if (d < bestD) { bestD = d; best = z }
+  }
+  return bestD <= 3000 ? best : null
 }
 
 export const ASHDOD_CENTER = [34.6553, 31.8014]

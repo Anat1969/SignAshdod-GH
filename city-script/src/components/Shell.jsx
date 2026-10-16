@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, useCallback } from 'react'
+import { useEffect, useRef, useState, createContext, useContext, useCallback } from 'react'
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
@@ -30,12 +30,21 @@ export default function Shell({ children }) {
   const [strip, setStripState] = useState({ label: 'כתב העיר', text: '', color: 'var(--port-500)' })
   const [toast, setToast] = useState(null)
   const [installEvt, setInstallEvt] = useState(null)
+  const [sysOpen, setSysOpen] = useState(false)
+  const sysRef = useRef(null)
   const loc = useLocation()
 
   const set = useCallback((s) => setStripState((prev) => (prev.label === s.label && prev.text === s.text && prev.color === s.color ? prev : s)), [])
   const show = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2400) }, [])
 
-  useEffect(() => { setOpen(false); window.scrollTo({ top: 0 }) }, [loc.pathname])
+  useEffect(() => { setOpen(false); setSysOpen(false); window.scrollTo({ top: 0 }) }, [loc.pathname])
+  useEffect(() => {
+    if (!sysOpen) return
+    const close = (e) => { if (e.type === 'keydown' ? e.key === 'Escape' : !sysRef.current?.contains(e.target)) setSysOpen(false) }
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', close)
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', close) }
+  }, [sysOpen])
   useEffect(() => {
     const h = (e) => { e.preventDefault(); setInstallEvt(e) }
     window.addEventListener('beforeinstallprompt', h)
@@ -68,10 +77,19 @@ export default function Shell({ children }) {
               {links.map(([to, label]) => <NavLink key={to} to={to}>{label}</NavLink>)}
             </nav>
             <div className="nav-actions">
-              <button className="btn btn-sm" onClick={copyLink}>העתקת קישור</button>
-              <a className="btn btn-sm btn-quiet" href={DEV_CHAT} target="_blank" rel="noreferrer">שיחת הפיתוח</a>
-              <a className="btn btn-sm btn-quiet" href={RESEARCH} target="_blank" rel="noreferrer">פרויקט המחקר</a>
-              {installEvt && <button className="btn btn-sm btn-primary" onClick={install}>התקנת האפליקציה</button>}
+              <div className={`sysmenu ${sysOpen ? 'open' : ''}`} ref={sysRef}>
+                <button className="btn btn-sm sysmenu-btn" aria-haspopup="menu" aria-expanded={sysOpen} onClick={() => setSysOpen((o) => !o)}>
+                  מערכת{installEvt && <span className="sysmenu-dot" aria-label="אפשר להתקין" />}
+                </button>
+                <div className="sysmenu-panel" role="menu">
+                  <button role="menuitem" onClick={() => { setSysOpen(false); copyLink() }}>העתקת קישור<small>הכתובת של המסך הנוכחי</small></button>
+                  <a role="menuitem" href={DEV_CHAT} target="_blank" rel="noreferrer" onClick={() => setSysOpen(false)}>שיחת הפיתוח<small>השיחה שבה נבנתה האפליקציה</small></a>
+                  <a role="menuitem" href={RESEARCH} target="_blank" rel="noreferrer" onClick={() => setSysOpen(false)}>פרויקט המחקר<small>המקורות והמדיניות</small></a>
+                  {installEvt
+                    ? <button role="menuitem" className="sysmenu-primary" onClick={() => { setSysOpen(false); install() }}>התקנת האפליקציה<small>פתיחה בחלון Chrome משלה</small></button>
+                    : <span className="sysmenu-note">התקנה: בתפריט Chrome, "התקנת כתב העיר".</span>}
+                </div>
+              </div>
             </div>
           </div>
         </header>

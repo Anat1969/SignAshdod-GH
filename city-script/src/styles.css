@@ -1,7 +1,7 @@
 /* כתב העיר — שפת העיצוב נגזרת ממערכת העיצוב "עיריית אשדוד":
    קרקע שקטה (paper, ink, line), עיר אפורה, ושלט אחד בצבע. */
 :root {
-  --paper: #FAF8F4; --surface-raised: #FFFFFF; --sand: #F1ECE3; --line: #C9C0B2;
+  --paper: #F4F5F6; --surface-raised: #FFFFFF; --sand: #E9EBED; --line: #C5CAD0;
   --ink: #13222C; --ink-muted: #55636C; --on-action: #FFFFFF;
   --sea-100: #DEEDF0; --sea-300: #A0D4E8; --sea-500: #31A7D9; --sea-700: #216B8C; --sea-900: #133546;
   --dune-100: #F9EED6; --dune-300: #F7D895; --dune-500: #F3B220; --dune-700: #7A601E; --dune-900: #3E381D;
@@ -251,8 +251,8 @@ tr.clickable:hover td { background: var(--sand); }
 
 /* חזיתות סכמטיות לסוגי השלטים */
 .sd { display: block; width: 100%; height: auto;
-  --sd-sky1: #E9F0F3; --sd-sky2: var(--paper); --sd-w1: #F7F5F1; --sd-w2: #E3DED5; --sd-side: #CEC7BB; --sd-roof: #DCD6CC;
-  --sd-edge: #A69D8F; --sd-glass: #C3D3DA; --sd-ground: #DCD5C9; --sd-door: #6E7B83; }
+  --sd-sky1: #E8EEF2; --sd-sky2: var(--paper); --sd-w1: #F7F8F9; --sd-w2: #E1E4E7; --sd-side: #C9CED3; --sd-roof: #D7DBDF;
+  --sd-edge: #9AA1A8; --sd-glass: #C3D3DA; --sd-ground: #D5D9DD; --sd-door: #6E7B83; }
 @media (prefers-color-scheme: dark) {
   .sd { --sd-sky1: #10212B; --sd-w1: #2A3B47; --sd-w2: #1F2F3A; --sd-side: #17252F; --sd-roof: #22333F;
     --sd-edge: #4C6272; --sd-glass: #3B5566; --sd-ground: #1A2A35; --sd-door: #8FA1AC; }
@@ -442,7 +442,7 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 .sk-far rect { fill: color-mix(in srgb, var(--line) 45%, var(--paper)); }
 .sk-mid .sk-body { fill: color-mix(in srgb, var(--line) 80%, var(--paper)); }
 .sk-win-mid { fill: color-mix(in srgb, var(--paper) 55%, transparent); }
-.sk-near-top { stop-color: #C4BCAF; } .sk-near-bottom { stop-color: #A9A091; }
+.sk-near-top { stop-color: #C3C8CD; } .sk-near-bottom { stop-color: #A3AAB1; }
 .sk-win { fill: rgba(255,255,255,.28); }
 .sk-shop { fill: rgba(19,34,44,.18); }
 .sk-strip { fill: rgba(255,255,255,.12); }
@@ -466,3 +466,93 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 .rise { animation: rise .7s var(--ease) both; }
 @media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
 .eyebrow, .strip-label, .section-ref, .entry .num { letter-spacing: 0; }
+
+/* ===== תפריט מערכת: כפתור אחד לכל פעולות המערכת ===== */
+.sysmenu { position: relative; }
+.sysmenu-btn { gap: 8px; padding-inline: 14px; }
+.sysmenu.open .sysmenu-btn { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.sysmenu-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--port-500); box-shadow: 0 0 8px var(--port-500); }
+.sysmenu-panel {
+  position: absolute; inset-inline-end: 0; top: calc(100% + 10px); width: 270px; z-index: 60;
+  background: var(--sheen), var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: var(--shadow-3); padding: 6px; display: grid; gap: 2px;
+  opacity: 0; transform: translateY(-6px) scale(.98); transform-origin: top left; pointer-events: none; visibility: hidden;
+  transition: opacity .2s var(--ease), transform .25s var(--ease), visibility 0s .25s;
+}
+.sysmenu.open .sysmenu-panel { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .2s var(--ease), transform .25s var(--ease); }
+.sysmenu-panel > a, .sysmenu-panel > button {
+  appearance: none; border: 0; background: none; font: inherit; color: var(--ink); text-decoration: none; text-align: start; cursor: pointer;
+  display: grid; gap: 2px; padding: 10px 12px; font-size: 15px; border-radius: 2px; transition: background .2s;
+}
+.sysmenu-panel > a:hover, .sysmenu-panel > button:hover, .sysmenu-panel > a:focus-visible, .sysmenu-panel > button:focus-visible { background: var(--sand); }
+.sysmenu-panel small { font-size: 12px; color: var(--ink-muted); }
+.sysmenu-panel .sysmenu-primary { color: var(--sea-ink); font-weight: 500; }
+.sysmenu-note { font-size: 12px; color: var(--ink-muted); padding: 8px 12px; border-top: 1px solid var(--line); margin-top: 4px; }
+@media (max-width: 1180px) {
+  .sysmenu { width: 100%; }
+  .sysmenu-panel { position: static; width: 100%; box-shadow: none; display: none; margin-top: 6px; }
+  .sysmenu.open .sysmenu-panel { display: grid; }
+}
+
+/* ===== שלט האתר: כותבים על השלט עצמו ===== */
+.ps-stage { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; perspective: 1400px; }
+@media (max-width: 980px) { .ps-stage { grid-template-columns: minmax(0, 1fr); } }
+.ps-side { display: grid; gap: var(--space-3); }
+.project-sign.ps-editable { font-size: clamp(9px, 1.15vw, 15px); box-shadow: var(--shadow-3); transform: rotateY(-4deg) rotateX(1deg); transition: transform .6s var(--ease); border-radius: 2px; }
+.project-sign.ps-editable:hover, .project-sign.ps-editable:focus-within { transform: none; }
+.ps-ink { all: unset; box-sizing: border-box; display: block; width: 100%; min-width: 0; font: inherit; color: inherit; cursor: text;
+  border-bottom: 1px dashed transparent; transition: border-color .2s, background .2s; }
+.ps-ink::placeholder { color: inherit; opacity: .55; }
+.ps-ink:hover { border-bottom-color: currentColor; }
+.ps-ink:focus { border-bottom-color: currentColor; background: rgba(255,255,255,.12); outline: none; }
+.ps-ink.ps-title { font-size: 3.2em; font-weight: 600; line-height: 1.1; }
+.ps-ink-permit { display: inline-block; width: 9em; }
+.project-sign .ps-rows div { align-items: baseline; }
+.project-sign .ps-rows div > span { flex: 0 0 auto; }
+.project-sign .ps-rows .ps-ink { text-align: start; padding-inline-start: 10px; }
+.project-sign .ps-foot .ps-ink { color: #55636C; }
+.project-sign .ps-foot .ps-ink:focus { background: rgba(31,138,153,.08); }
+
+/* ===== גדר מדברת ===== */
+.fence-block { display: grid; gap: var(--space-5); }
+.fence-head { display: flex; justify-content: space-between; gap: var(--space-5); align-items: start; flex-wrap: wrap; }
+.fence-head > div { max-width: 62ch; display: grid; gap: var(--space-2); }
+.switch { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 16px; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch-track { width: 46px; height: 26px; border-radius: 13px; background: var(--line); position: relative; box-shadow: inset 0 1px 3px rgba(0,0,0,.15); transition: background .25s var(--ease); flex: 0 0 auto; }
+.switch-track::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-2); transition: inset-inline-start .25s var(--ease); }
+.switch input:checked + .switch-track { background: var(--dune-500); }
+.switch input:checked + .switch-track::after { inset-inline-start: 23px; }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.fence-sheet { display: grid; gap: var(--space-4); }
+.fence-bar-lg { height: 48px; box-shadow: var(--shadow-2); }
+.fence-bar-lg > div { font-size: 14px; }
+.fence-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); font-weight: 400; }
+@media (max-width: 640px) { .fence-inputs { grid-template-columns: minmax(0, 1fr); } }
+.fence-table td { vertical-align: middle; }
+.fence-table tr.total td { font-weight: 500; background: var(--sand); }
+.cell-input { border: 1px solid transparent; background: transparent; box-shadow: none; padding: 6px 8px; }
+.cell-input:hover { border-color: var(--line); }
+.cell-input:focus { background: var(--surface-raised); }
+
+.save-bar {
+  position: sticky; bottom: 12px; z-index: 20; margin-top: var(--space-7);
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5); background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow: var(--shadow-3);
+}
+.save-bar > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.saved-list { margin-top: var(--space-5); display: grid; gap: var(--space-3); }
+.saved-list .rules li { grid-template-columns: 110px minmax(0, 1fr) auto; align-items: center; }
+@media (max-width: 640px) { .saved-list .rules li { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== מסלולים על המפה ===== */
+.route-key { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11px; margin-inline-end: 8px; box-shadow: var(--shadow-1); }
+.route-entry.is-hover { transform: perspective(900px) translateX(-6px); box-shadow: var(--shadow-3); }
+.route-entry.is-hover::after { transform: scaleX(1); }
+@media (max-width: 640px) {
+  .save-bar { padding: var(--space-3); gap: var(--space-2); bottom: 8px; }
+  .save-bar .save-note { display: none; }
+  .save-bar .row { width: 100%; } .save-bar .row .btn { flex: 1 1 0; }
+  .fence-table th, .fence-table td { padding: 8px 6px; }
+}

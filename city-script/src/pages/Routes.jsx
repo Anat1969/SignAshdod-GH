@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import CityMap from '../components/CityMap'
 import { useData } from '../lib/data'
 import { useStrip } from '../components/Shell'
@@ -9,9 +9,15 @@ import { zoneAt } from '../lib/geo'
 
 export function RoutesIndex() {
   const d = useData()
-  useStrip('מסלולים', 'המפה הסיפורית: בכל מסלול, הסיפור של המקום והכלל שחל בו.', 'var(--nahal-500)')
-  const all = useMemo(() => (d.routes || []).flatMap((r) => r.stops.map((s) => [s.building.lng, s.building.lat])), [d.routes])
+  const nav = useNavigate()
+  const [hover, setHover] = useState(null)
+  useStrip('מסלולים', 'המפה הסיפורית: כל מסלול הוא קו על המפה. בכל תחנה, הסיפור של המקום והכלל שחל בו.', 'var(--nahal-500)')
+  const routes = d.routes || []
+  const all = useMemo(() => routes.flatMap((r) => r.stops.map((s) => [s.building.lng, s.building.lat])), [routes])
+  const lines = useMemo(() => routes.map((r) => ({ id: r.slug, landscape: r.sign?.landscape || 'dune', active: r.slug === hover, coords: r.stops.map((s) => [s.building.lng, s.building.lat]) })), [routes, hover])
+  const starts = useMemo(() => routes.filter((r) => r.stops.length).map((r, i) => ({ id: r.slug, lng: r.stops[0].building.lng, lat: r.stops[0].building.lat, landscape: r.sign?.landscape || 'dune', label: String(i + 1) })), [routes])
   if (d.loading) return <Loading />
+  const hoverRoute = routes.find((r) => r.slug === hover)
   return (
     <div className="page page-wide">
       <div className="page-head">
@@ -20,18 +26,23 @@ export function RoutesIndex() {
         <p className="lead">המסלולים נבנו מרשימת המבנים והאתרים לשימור של העיר. לכל מסלול נוסף רובד של שילוט: מה מותר לאורכו ולמה.</p>
       </div>
       <div className="split">
-        <div className="choice-grid" style={{ gridTemplateColumns: 'minmax(0,1fr)' }}>
-          {d.routes.map((r) => (
-            <Link key={r.slug} to={`/routes/${r.slug}`} className="entry" style={{ '--entry-color': land(r.sign?.landscape).c500, minHeight: 0 }}>
-              <span className="num">{r.theme} · {r.stops.length} תחנות</span>
+        <div className="choice-grid" style={{ gridTemplateColumns: 'minmax(0,1fr)' }} onMouseLeave={() => setHover(null)}>
+          {routes.map((r, i) => (
+            <Link key={r.slug} to={`/routes/${r.slug}`} className={`entry route-entry ${hover === r.slug ? 'is-hover' : ''}`} style={{ '--entry-color': land(r.sign?.landscape).c500, minHeight: 0 }}
+              onMouseEnter={() => setHover(r.slug)} onFocus={() => setHover(r.slug)}>
+              <span className="num"><span className="route-key" style={{ background: land(r.sign?.landscape).c500 }}>{i + 1}</span>{r.theme} · {r.stops.length} תחנות</span>
               <h3>{r.title}</h3>
               {r.sign && <p>{r.sign.note}</p>}
             </Link>
           ))}
-          {!d.routes.length && <p className="muted">המסלולים לא נטענו כרגע.</p>}
+          {!routes.length && <p className="muted">המסלולים לא נטענו כרגע.</p>}
         </div>
-        <div className="sticky"><CityMap zones={d.zones} fitTo={all.length ? all : null} height={640}
-          points={(d.routes || []).flatMap((r) => r.stops.map((s) => ({ id: `${r.slug}:${s.building.id}`, lng: s.building.lng, lat: s.building.lat, landscape: r.sign?.landscape, label: '' })))} /></div>
+        <div className="sticky">
+          <CityMap zones={d.zones} showZones={false} legend={false} fitTo={all.length ? all : null} height={640}
+            lines={lines} onLineClick={(slug) => nav(`/routes/${slug}`)}
+            points={starts} activePointId={hover} onPointClick={(slug) => nav(`/routes/${slug}`)}
+            note={hoverRoute ? `${hoverRoute.title} · ${hoverRoute.stops.length} תחנות` : 'כל קו הוא מסלול. המספר מסמן את נקודת ההתחלה.'} />
+        </div>
       </div>
     </div>
   )

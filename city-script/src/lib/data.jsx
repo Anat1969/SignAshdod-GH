@@ -19,13 +19,15 @@ function seedRules() {
 function zonesFromQuarters(quarters) {
   const out = quarters.map((q) => {
     const z = { ...seed.defaultQuarterZone, ...(seed.quarterZones[q.id] || {}) }
+    const ring = q.polygon || []
+    const centroid = ring.length ? [ring.reduce((t, c) => t + c[0], 0) / ring.length, ring.reduce((t, c) => t + c[1], 0) / ring.length] : null
     return {
-      id: `zq-${q.id}`, name: q.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
+      id: `zq-${q.id}`, kind: 'quarter', center: Array.isArray(q.center) && q.center.length === 2 ? q.center : centroid, name: q.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
       coast: !!z.coast, view_protected: false, priority: 1, schematic: true, note: z.note, polygon: q.polygon, source: `quarters:${q.id}`,
     }
   })
   for (const z of seed.overlayZones) {
-    out.push({ id: z.id, name: z.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
+    out.push({ id: z.id, kind: 'overlay', name: z.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
       coast: !!z.coast, view_protected: !!z.view, priority: z.priority, schematic: true, note: z.note, polygon: z.polygon, source: 'schematic' })
   }
   return out
