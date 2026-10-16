@@ -1,0 +1,13 @@
+# כתב העיר (city-script)
+
+כלי שילוט עירוני לאשדוד. Vite + React + framer-motion + MapLibre (OpenFreeMap) + Supabase.
+
+- האפליקציה הקיימת בשורש הריפו לא נוגעים בה. כל העבודה בתיקייה city-script/.
+- Supabase: פרויקט ASHDODMAP (cbhexpybdggwzyakgagd), משותף. כל טבלה חדשה בקידומת ks_. המיגרציה ב-supabase/001_schema.sql, ומחילים אותה רק אחרי אישור של ענת. עד אז האפליקציה עובדת מנתוני הבסיס (src/seed/policy.js, ו-seed/policy.mjs כמקור).
+- כל כלל נושא סעיף מקור מהמדיניות. אין כלל בלי סעיף.
+- Vercel: פרויקט ktav-hair-ashdod, rootDirectory=city-script, ציבורי (ssoProtection כבוי). כתובת: https://ktav-hair-ashdod.vercel.app
+- בדיקה: `npm run build && npm run preview`, ואז `node tests/e2e.mjs`. ממתינים ל-response של המוק ולא ל-request (אחרת יש מרוץ).
+- Shell.jsx: בלי AnimatePresence סביב העמוד. motion.div עם key ואנימציית כניסה בלבד, אחרת הקלט שהוקלד נמחק.
+
+## תיקונים של ענת
+- שלב 1: לא למזג ל-main, לא להחיל מיגרציה, לא להוסיף פיצ'רים ולא לעצב מחדש עד סקירה.
