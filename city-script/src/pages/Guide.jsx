@@ -3,6 +3,7 @@ import { useData, rulesFor, categoryBySlug } from '../lib/data'
 import { useStrip } from '../components/Shell'
 import { Section, Tag, Loading } from '../components/bits'
 import { land } from '../lib/landscapes'
+import SignDiagram from '../components/SignDiagram'
 
 const GENERAL = [
   ['1.1.2', 'בשלט אין פגיעה בתקנת הציבור וברגשותיו.'],
@@ -26,6 +27,7 @@ export function GuideIndex() {
       <div className="choice-grid">
         {d.categories.map((c) => (
           <Link key={c.slug} to={`/guide/${c.slug}`} className="entry" style={{ '--entry-color': land(c.landscape).c500, minHeight: 180 }}>
+            <SignDiagram slug={c.slug} landscape={c.landscape} compact title={c.name} />
             <span className="num">סעיף {c.section}</span>
             <h3>{c.name}</h3>
             <p>{c.summary}</p>
@@ -59,6 +61,7 @@ export function GuideCategory() {
         <p className="lead">{c.summary}</p>
         <p className="muted">תוקף רישיון: {c.default_validity_months ? `${c.default_validity_months} חודשים (ברירת מחדל לסוג שלט זה, ניתן לעריכה).` : `${d.settings.license_policy?.label}. אין חידוש שנתי.`}</p>
       </div>
+      <SignDiagram slug={c.slug} landscape={c.landscape} title={c.name} />
       <div className="grid-2">
         <div>
           <h3 style={{ marginBottom: 'var(--space-3)' }}>תנאים שנבדקים</h3>

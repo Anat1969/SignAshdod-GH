@@ -7,7 +7,9 @@
 - כל כלל נושא סעיף מקור מהמדיניות. אין כלל בלי סעיף.
 - Vercel: פרויקט ktav-hair-ashdod, rootDirectory=city-script, ציבורי (ssoProtection כבוי). כתובת: https://ktav-hair-ashdod.vercel.app
 - בדיקה: `npm run build && npm run preview`, ואז `node tests/e2e.mjs`. ממתינים ל-response של המוק ולא ל-request (אחרת יש מרוץ).
+- הנחיות: לכל סוג שלט חזית סכמטית ב-src/components/SignDiagram.jsx (SVG, מידות וסעיפים ממוספרים + מקרא). סוג שלט חדש מחייב תרשים חדש שם.
 - Shell.jsx: בלי AnimatePresence סביב העמוד. motion.div עם key ואנימציית כניסה בלבד, אחרת הקלט שהוקלד נמחק.
 
 ## תיקונים של ענת
 - שלב 1: לא למזג ל-main, לא להחיל מיגרציה, לא להוסיף פיצ'רים ולא לעצב מחדש עד סקירה.
+- בהנחיות, לכל סוג שלט גרפיקה ויזואלית שמתאימה לסוג השלט.

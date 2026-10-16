@@ -147,9 +147,12 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     const cards = page.locator('.choice-grid a.entry')
     const c = await cards.count()
     if (c !== 7) throw new Error('צפויים 7 סוגי שלטים, נמצאו ' + c)
+    if (await page.locator('.choice-grid .sd-thumb svg').count() !== 7) throw new Error('חסרים תרשימים בכרטיסי ההנחיות')
     for (let i = 0; i < c; i++) {
       await page.locator('.choice-grid a.entry').nth(i).click()
       await page.getByRole('heading', { name: 'תנאים שנבדקים' }).waitFor()
+      if (await page.locator('.sd-figure svg[role=img]').count() !== 1) throw new Error('חסר תרשים חזית לסוג שלט ' + i)
+      if (await page.locator('.sd-legend li').count() < 3) throw new Error('מקרא התרשים חסר בסוג שלט ' + i)
       await page.goBack()
     }
     await page.locator('.choice-grid a.entry').nth(5).click()
