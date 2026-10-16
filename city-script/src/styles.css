@@ -556,3 +556,54 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
   .save-bar .row { width: 100%; } .save-bar .row .btn { flex: 1 1 0; }
   .fence-table th, .fence-table td { padding: 8px 6px; }
 }
+
+/* ===== חזיתות השלטים: זרקור, הבלטה ותנועה ===== */
+.sd { --sd-veil: var(--paper); }
+.sd .sd-veil { animation: sd-in 1s var(--ease) .55s both; pointer-events: none; }
+.sd .sd-sign { transform-box: fill-box; transform-origin: center; }
+.sd:not(.sd-compact) .sd-sign { animation: sd-drop .55s var(--ease) both, sd-glow 2.6s ease-in-out 1.4s infinite alternate; }
+@keyframes sd-glow {
+  from { filter: drop-shadow(0 0 0 transparent); }
+  to { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--sd-accent) 75%, transparent)) drop-shadow(0 2px 2px rgba(19,34,44,.18)); }
+}
+.sd .sd-dim line { stroke-dasharray: 240; stroke-dashoffset: 240; animation: sd-draw .9s var(--ease) .7s forwards; }
+.sd .sd-dim text { animation: sd-in .5s var(--ease) 1.3s both; }
+@keyframes sd-draw { to { stroke-dashoffset: 0; } }
+.sd .sd-pop { transform-box: fill-box; transform-origin: center; animation: sd-pop .45s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes sd-pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+.sd .sd-mark { cursor: help; transition: opacity .25s; }
+.sd .sd-mark circle { transition: fill .25s, r .25s; }
+.sd[data-hl] .sd-mark { opacity: .35; }
+.sd[data-hl="1"] .sd-mark[data-n="1"], .sd[data-hl="2"] .sd-mark[data-n="2"], .sd[data-hl="3"] .sd-mark[data-n="3"],
+.sd[data-hl="4"] .sd-mark[data-n="4"], .sd[data-hl="5"] .sd-mark[data-n="5"] { opacity: 1; }
+.sd[data-hl="1"] .sd-mark[data-n="1"] circle, .sd[data-hl="2"] .sd-mark[data-n="2"] circle, .sd[data-hl="3"] .sd-mark[data-n="3"] circle,
+.sd[data-hl="4"] .sd-mark[data-n="4"] circle, .sd[data-hl="5"] .sd-mark[data-n="5"] circle { fill: var(--sd-accent); r: 12px; }
+.sd-legend li { padding: 6px 8px; margin: -6px -8px; border-radius: 2px; transition: background .25s, transform .25s var(--ease); cursor: default; }
+.sd-legend li.is-hl { background: color-mix(in srgb, var(--sd-accent) 12%, transparent); transform: translateX(-4px); }
+.sd-legend li.is-hl .sd-legend-n { background: var(--sd-accent); }
+.sd-legend li { animation: rise .5s var(--ease) both; }
+.sd-legend li:nth-child(2) { animation-delay: .08s; } .sd-legend li:nth-child(3) { animation-delay: .16s; }
+.sd-legend li:nth-child(4) { animation-delay: .24s; } .sd-legend li:nth-child(5) { animation-delay: .32s; }
+/* כרטיסי ההנחיות: השלט נדלק במעבר העכבר */
+.sd-thumb { overflow: hidden; }
+.sd-thumb .sd { transition: transform .7s var(--ease); }
+.entry:hover .sd-thumb .sd { transform: scale(1.06); }
+.sd-compact .sd-sign { transition: filter .45s var(--ease); }
+.entry:hover .sd-compact .sd-sign { filter: drop-shadow(0 0 8px var(--sd-accent)) drop-shadow(0 0 2px var(--sd-accent)); }
+@media (prefers-reduced-motion: reduce) {
+  .sd .sd-sign, .sd .sd-dim line, .sd .sd-dim text, .sd .sd-pop, .sd .sd-veil, .sd-legend li { animation: none; stroke-dashoffset: 0; }
+}
+
+/* הדמיית ההיתר על שלט האתר */
+.project-sign .ps-render { position: relative; }
+.project-sign .ps-render-box { position: relative; cursor: pointer; overflow: hidden; transition: box-shadow .25s, background .25s; }
+.project-sign .ps-render-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.project-sign .ps-render-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: sd-in .6s var(--ease) both; }
+.project-sign .ps-render-box:hover, .project-sign .ps-render-box.is-over { box-shadow: inset 0 0 0 2px #1F8A99; }
+.project-sign .ps-render-box.is-over { background: rgba(31,138,153,.12); }
+.project-sign .ps-render-box:focus-within { box-shadow: inset 0 0 0 2px var(--focus); }
+.ps-render-hint { display: grid; gap: 4px; text-align: center; pointer-events: none; }
+.ps-render-hint b { font-weight: 500; }
+.ps-render-hint small { font-size: .85em; opacity: .75; }
+.ps-render-clear { position: absolute; top: 6px; inset-inline-end: 6px; appearance: none; border: 0; font: inherit; font-size: 11px; padding: 4px 8px; background: rgba(19,34,44,.72); color: #fff; cursor: pointer; opacity: 0; transition: opacity .2s; }
+.project-sign:hover .ps-render-clear, .ps-render-clear:focus-visible { opacity: 1; }

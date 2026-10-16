@@ -23,7 +23,26 @@ const CHECKLIST = [
 const STORE = 'ktav-construction-v1'
 const readStore = () => { try { return JSON.parse(localStorage.getItem(STORE) || '{}') } catch { return {} } }
 const writeStore = (v) => { try { localStorage.setItem(STORE, JSON.stringify(v)); return true } catch { return false } }
-const EMPTY_SIGN = { project: '', permit: '', developer: '', architect: '', contractor: '', engineer: '', manager: '', supervisor: '', company: '' }
+const EMPTY_SIGN = { project: '', permit: '', developer: '', architect: '', contractor: '', engineer: '', manager: '', supervisor: '', company: '', render: '' }
+
+// הקטנת ההדמיה בדפדפן לפני השמירה, כדי שתיכנס לבקשה
+function shrinkImage(file, max = 1400) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) { reject(new Error('type')); return }
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height))
+      const cv = document.createElement('canvas')
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k)
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height)
+      URL.revokeObjectURL(url)
+      resolve(cv.toDataURL('image/jpeg', 0.84))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('load')) }
+    img.src = url
+  })
+}
 const EMPTY_FENCE = { length: '', location: '', cityContent: 'תכנים עירוניים בתיאום דוברות העירייה', devContent: '' }
 
 // שדה שנכתב ישירות על גבי השלט
@@ -41,6 +60,7 @@ export default function Construction() {
   const [done, setDone] = useState({})
   const [saved, setSaved] = useState(readStore)
   const [savedAt, setSavedAt] = useState(null)
+  const [dragOver, setDragOver] = useState(false)
   const L = hasFence ? Math.max(0, Number(fence.length) || 0) : 0
   const half = Math.round((L / 2) * 10) / 10
   const ent = Math.max(1, Math.min(12, Number(entrances) || 1))
@@ -56,11 +76,16 @@ export default function Construction() {
     `${name || 'פרויקט חדש'}: ${ent} שלטי אתר${hasFence && L ? `, גדר של ${L} מ' (${half} מ' לעירייה, ${half} מ' ליזם)` : hasFence ? ', עם גדר מדברת' : ''}. מסמכים: ${doneCount}/${CHECKLIST.length}.${savedAt ? ' נשמר.' : ''}`,
     'var(--dune-500)')
 
+  const takeRender = async (file) => {
+    if (!file) return
+    try { setS('render')(await shrinkImage(file)); toast('ההדמיה נטענה לשלט') }
+    catch { toast('אפשר לטעון רק קובץ תמונה (JPG, PNG)') }
+  }
   const save = () => {
     if (!name) { toast('יש לכתוב שם פרויקט על השלט לפני השמירה'); return }
     const at = new Date().toISOString()
     const next = { ...readStore(), [name]: { sign, entrances, hasFence, fence: hasFence ? fence : null, done, savedAt: at } }
-    if (!writeStore(next)) { toast('הדפדפן חוסם שמירה. אפשר להדפיס את הדף.'); return }
+    if (!writeStore(next)) { toast(sign.render ? 'אין מקום בדפדפן לשמירת ההדמיה. נסו תמונה קטנה יותר.' : 'הדפדפן חוסם שמירה. אפשר להדפיס את הדף.'); return }
     setSaved(next); setSavedAt(at); toast(`הבקשה "${name}" נשמרה`)
   }
   const load = (k) => {
@@ -93,7 +118,15 @@ export default function Construction() {
             <div className="ps-rows">{SIGN_FIELDS.map(([k, l]) => <div key={k}><span>{l}:</span><Ink value={sign[k]} onChange={setS(k)} label={l} placeholder="" /></div>)}</div>
           </div>
           <div className="ps-render">
-            <div className="ps-render-box">הדמיית ההיתר</div>
+            <label className={`ps-render-box ${sign.render ? 'has-img' : ''} ${dragOver ? 'is-over' : ''}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }} onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => { e.preventDefault(); setDragOver(false); takeRender(e.dataTransfer.files?.[0]) }}>
+              <input type="file" accept="image/*" aria-label="העלאת הדמיית ההיתר" onChange={(e) => { takeRender(e.target.files?.[0]); e.target.value = '' }} />
+              {sign.render
+                ? <img src={sign.render} alt="הדמיית ההיתר" />
+                : <span className="ps-render-hint"><b>הדמיית ההיתר</b><small>לחיצה או גרירה של קובץ תמונה</small></span>}
+            </label>
+            {sign.render && <button type="button" className="ps-render-clear" onClick={() => setS('render')('')}>הסרת ההדמיה</button>}
             <div className="ps-foot"><Ink value={sign.company} onChange={setS('company')} label="שם החברה, ח.פ. וכתובת הנכס" /></div>
           </div>
         </div>

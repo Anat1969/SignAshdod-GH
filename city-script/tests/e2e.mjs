@@ -20,6 +20,7 @@ const buildings = [
 const sites = [{ route_id: 'r8', building_id: 'b1', position: 1, narrative_text: 'המצודה' }, { route_id: 'r8', building_id: 'b2', position: 2, narrative_text: 'המרינה' }]
 const app = { id: 'a1', tracking_code: 'KS-TEST01', applicant_name: 'דנה', business_name: 'קפה הים', address: 'שבי ציון 12', category_slug: 'business', status: 'התקבלה', license_valid_until: null, check_result: { overall: 'review', items: [{ section: '2.1.6', text: 'סף תחתון', status: 'pass' }] }, created_at: new Date().toISOString() }
 
+const PNG = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAKCAIAAAAy3EnLAAAAF0lEQVR4nGOsWLCPgRTARJLqUQ2DRgMAlOUB6kRTKmQAAAAASUVORK5CYII='
 const errors = []
 const requests = []
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
@@ -135,6 +136,8 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.getByLabel('שם הפרויקט').fill('מגדלי החוף')
     await page.getByLabel('מספר היתר בנייה').fill('2025-0412')
     await page.getByLabel('שם היזם').fill('אפיק נדל"ן')
+    await page.getByLabel('העלאת הדמיית ההיתר').setInputFiles({ name: 'render.png', mimeType: 'image/png', buffer: Buffer.from(PNG, 'base64') })
+    await page.locator('.ps-render-box img').waitFor()
     if (await page.getByLabel('אורך הגדר הכולל (מ\')').count()) throw new Error('טבלת הגדר מוצגת לפני שסומן שיש גדר')
     await page.locator('label.switch').click()
     await page.getByLabel('אורך הגדר הכולל (מ\')').fill('120')
@@ -152,6 +155,7 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.locator('.saved-list').getByRole('button', { name: 'פתיחה' }).first().click()
     if (await page.getByLabel('שם הפרויקט').inputValue() !== 'מגדלי החוף') throw new Error('הבקשה השמורה לא נפתחה')
     if (await page.getByLabel('תוכן חלק היזם').inputValue() !== 'הדמיות הפרויקט') throw new Error('נתוני הגדר לא נשמרו עם הבקשה')
+    if (!(await page.locator('.ps-render-box img').count())) throw new Error('ההדמיה לא נשמרה עם הבקשה')
     await page.screenshot({ path: `${OUT}/${vp.name}-construction.png`, fullPage: true })
     await noHScroll('construction')
     await page.locator('.saved-list').getByRole('button', { name: 'מחיקה' }).first().click()
@@ -172,6 +176,10 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
       if (await page.locator('.sd-legend li').count() < 3) throw new Error('מקרא התרשים חסר בסוג שלט ' + i)
       await page.goBack()
     }
+    await page.locator('.choice-grid a.entry').nth(1).click()
+    await page.locator('.sd-legend li').nth(1).hover()
+    await page.locator('.sd[data-hl="2"]').waitFor()
+    await page.goBack()
     await page.locator('.choice-grid a.entry').nth(5).click()
     await page.getByRole('link', { name: 'בדיקת התאמה לסוג זה' }).click()
     await page.getByLabel('כתובת באשדוד').waitFor()

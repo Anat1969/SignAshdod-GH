@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { land } from '../lib/landscapes'
 import { Section } from './bits'
 
@@ -48,7 +48,7 @@ function DimH({ y, x1, x2, label }) {
 }
 
 const Mark = ({ n, x, y, i = 0 }) => (
-  <g className="sd-mark sd-in" style={{ animationDelay: `${0.5 + i * 0.12}s` }}>
+  <g className="sd-mark sd-pop" data-n={n} style={{ animationDelay: `${0.9 + i * 0.12}s` }}>
     <circle cx={x} cy={y} r="9" />
     <text x={x} y={y + 4} textAnchor="middle">{n}</text>
   </g>
@@ -56,7 +56,21 @@ const Mark = ({ n, x, y, i = 0 }) => (
 
 // הבלטת השלט עצמו: נכנס אחרי הבניין
 const Sign = ({ children, i = 0 }) => (
-  <g className="sd-in sd-drop" style={{ animationDelay: `${0.2 + i * 0.1}s` }}>{children}</g>
+  <g className="sd-in sd-drop sd-sign" style={{ animationDelay: `${0.35 + i * 0.12}s` }}>{children}</g>
+)
+
+// זרקור: ההקשר מתעמעם סביב השלט, השלט נשאר בהיר
+const Veil = ({ id, f }) => (
+  <g className="sd-veil" aria-hidden="true">
+    <defs>
+      <radialGradient id={`${id}-veil`} gradientUnits="userSpaceOnUse" cx={f[0]} cy={f[1]} r={f[2]}>
+        <stop offset="0" style={{ stopColor: 'var(--sd-veil)', stopOpacity: 0 }} />
+        <stop offset="0.55" style={{ stopColor: 'var(--sd-veil)', stopOpacity: 0 }} />
+        <stop offset="1" style={{ stopColor: 'var(--sd-veil)', stopOpacity: 0.62 }} />
+      </radialGradient>
+    </defs>
+    <rect x="0" y="0" width="480" height="300" fill={`url(#${id}-veil)`} />
+  </g>
 )
 
 const D = {
@@ -66,11 +80,13 @@ const D = {
       ['2.2.1 ג-ד', 'פילם כחול מחזיר אור. גופן נרקיס בלוק, בגובה 7 ס"מ.'],
       ['2.2.1 א', 'מואר, בגובה 3 מ\' ממפלס הכניסה, בכל חזית הפונה לרחוב או למרחב ציבורי.'],
     ],
-    draw: (id) => (<>
+    focus: [252,173,120],
+    draw: (id, c, V) => (<>
       <Block id={id} x={150} y={70} w={230} h={190} />
       <Windows x={168} y={88} cols={5} rows={2} w={26} h={24} gx={16} gy={16} />
       <rect className="sd-door" x={175} y={196} width={40} height={64} />
       <rect className="sd-canopy" x={165} y={190} width={60} height={6} />
+      {V}
       <Sign>
         <rect x={232} y={158} width={40} height={30} rx="2" fill="#1F5FA8" filter={`url(#${id}-glow)`} />
         <text x={252} y={176} textAnchor="middle" className="sd-plate-num">12</text>
@@ -91,11 +107,13 @@ const D = {
       ['2.1.6', 'הסף התחתון בגובה 2.5 מ\' לפחות.'],
       ['2.2.3 י', 'מדבקות בחלון הראווה: עד 30% משטחו.'],
     ],
-    draw: (id, c) => (<>
+    focus: [240,195,190],
+    draw: (id, c, V) => (<>
       <Block id={id} x={60} y={60} w={370} h={200} />
       <Windows x={78} y={76} cols={8} rows={2} w={26} h={26} gx={18} gy={14} />
       <rect className="sd-strip" x={66} y={158} width={358} height={27} />
       {[0, 1, 2].map((k) => <rect key={k} className="sd-glass" x={74 + k * 120} y={195} width={104} height={65} />)}
+      {V}
       <Sign>
         <text x={126} y={178} textAnchor="middle" className="sd-letters sd-muted-letters">ספרים</text>
         <text x={366} y={178} textAnchor="middle" className="sd-letters sd-muted-letters">מאפייה</text>
@@ -124,10 +142,12 @@ const D = {
       ['2.2.4 ב', 'גוון השלט לפי גווני הלוגו.'],
       ['2.2.4 ג.2', 'בסגירה עונתית: באמצע החזית, בחלקה העליון, ולא מעבר לתקרת הסגירה.'],
     ],
-    draw: (id, c) => (<>
+    focus: [250,195,150],
+    draw: (id, c, V) => (<>
       <Block id={id} x={100} y={80} w={300} h={180} />
       <Windows x={120} y={96} cols={6} rows={2} w={28} h={24} gx={18} gy={14} />
       <rect className="sd-glass" x={160} y={200} width={180} height={60} />
+      {V}
       <Sign>
         <polygon className="sd-awning" points="152,170 348,170 366,198 134,198" />
         {Array.from({ length: 9 }, (_, k) => <line key={k} className="sd-awning-stripe" x1={160 + k * 22} y1={170} x2={152 + k * 24} y2={198} />)}
@@ -147,7 +167,8 @@ const D = {
       ['2.2.2 א', 'שם הקבלן, היזם או בעלי המבנה אסור על החזית ועל הגג.'],
       ['2.2.2 ב', 'שם יזם או קבלן מותר רק בתוך המבואה הראשית, עד 1.2 מ"ר.'],
     ],
-    draw: (id, c) => (<>
+    focus: [315,60,150],
+    draw: (id, c, V) => (<>
       <Block id={id} x={40} y={150} w={120} h={110} />
       <Windows x={54} y={164} cols={3} rows={2} w={22} h={22} gx={14} gy={14} />
       <text x={100} y={240} textAnchor="middle" className="sd-forbidden">שם היזם</text>
@@ -156,6 +177,7 @@ const D = {
       {Array.from({ length: 8 }, (_, k) => <line key={k} className="sd-mullion" x1={232 + k * 24} y1={76} x2={232 + k * 24} y2={226} />)}
       {Array.from({ length: 6 }, (_, k) => <line key={k} className="sd-mullion" x1={226} y1={86 + k * 24} x2={404} y2={86 + k * 24} />)}
       <rect className="sd-door" x={292} y={226} width={46} height={34} />
+      {V}
       <Sign>
         <text x={315} y={63} textAnchor="middle" className="sd-letters" style={{ fill: c.c700 }}>מרכז הים</text>
       </Sign>
@@ -172,9 +194,11 @@ const D = {
       ['2.2.5 א.2', 'טוטם: רק באזור מיוחד (מרכזי מסחר, פארק ההייטק).'],
       ['2.2.5 א.1', 'באישור ועדת השילוט, עם הדמיה בתלת־ממד של השלט על המבנה.'],
     ],
-    draw: (id, c) => (<>
+    focus: [190,160,190],
+    draw: (id, c, V) => (<>
       <Block id={id} x={170} y={50} w={240} h={210} />
       <Windows x={300} y={66} cols={3} rows={5} w={22} h={24} gx={12} gy={14} />
+      {V}
       <Sign>
         <defs>
           <linearGradient id={`${id}-banner`} x1="0" y1="0" x2="1" y2="1">
@@ -203,12 +227,14 @@ const D = {
       ['2.2.6 ז', 'לא מול עיני נהג בקו עצירה ולא בקו אחד עם פנסי רמזור.'],
       ['2.2.6 ג', 'היתר לשנה.'],
     ],
-    draw: (id, c) => (<>
+    focus: [305,176,140],
+    draw: (id, c, V) => (<>
       <g className="sd-faded"><Block id={id} x={24} y={150} w={72} h={110} d={10} />
         <Windows x={34} y={162} cols={2} rows={3} w={18} h={18} gx={14} gy={12} /></g>
       <Block id={id} x={190} y={70} w={230} h={190} />
       <Windows x={206} y={86} cols={6} rows={2} w={22} h={22} gx={14} gy={14} />
       <rect className="sd-glass" x={200} y={214} width={210} height={46} />
+      {V}
       <Sign>
         <defs>
           <linearGradient id={`${id}-screen`} x1="0" y1="0" x2="1" y2="1">
@@ -235,7 +261,8 @@ const D = {
       ['2.2.7 א.1', 'שלט אתר 2x4 מ\' בכל כניסה, במפלס הקרקע, עם מספר היתר והדמיה.'],
       ['2.2.7 ב.2', 'פורמט אחיד: צורה, צבע, גופן וקומפוזיציה. משתנים רק פרטי הפרויקט.'],
     ],
-    draw: (id, c) => (<>
+    focus: [300,228,240],
+    draw: (id, c, V) => (<>
       <g className="sd-frame">
         <line x1={330} y1={24} x2={330} y2={200} />
         <line x1={200} y1={30} x2={450} y2={30} />
@@ -244,6 +271,7 @@ const D = {
         {Array.from({ length: 5 }, (_, k) => <line key={`h${k}`} x1={150} y1={96 + k * 26} x2={310} y2={96 + k * 26} />)}
         {Array.from({ length: 5 }, (_, k) => <line key={`v${k}`} x1={150 + k * 40} y1={96} x2={150 + k * 40} y2={200} />)}
       </g>
+      {V}
       <Sign>
         <rect x={40} y={200} width={200} height={60} style={{ fill: 'var(--sea-300)' }} />
         <text x={140} y={236} textAnchor="middle" className="sd-fence-text">עירייה 50%</text>
@@ -270,10 +298,12 @@ export default function SignDiagram({ slug, landscape, compact = false, title })
   const raw = useId().replace(/[^a-zA-Z0-9]/g, '')
   const id = `sd${raw}`
   const spec = D[slug]
+  const [hl, setHl] = useState(null)
   if (!spec) return null
   const c = land(landscape)
   const svg = (
-    <svg viewBox="0 0 480 300" className={`sd ${compact ? 'sd-compact' : ''}`} role="img" aria-label={title ? `חזית סכמטית: ${title}` : 'חזית סכמטית'} direction="rtl">
+    <svg viewBox="0 0 480 300" className={`sd ${compact ? 'sd-compact' : ''}`} data-hl={hl ?? undefined} style={{ '--sd-accent': c.c500 }}
+      onMouseOver={(e) => { const m = e.target.closest?.('.sd-mark'); setHl(m ? m.dataset.n : null) }} onMouseLeave={() => setHl(null)} role="img" aria-label={title ? `חזית סכמטית: ${title}` : 'חזית סכמטית'} direction="rtl">
       <defs>
         <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" style={{ stopColor: 'var(--sd-sky1)' }} /><stop offset="1" style={{ stopColor: 'var(--sd-sky2)' }} />
@@ -291,18 +321,18 @@ export default function SignDiagram({ slug, landscape, compact = false, title })
       <rect x="0" y="0" width="480" height={G} fill={`url(#${id}-sky)`} />
       <rect x="0" y={G} width="480" height={300 - G} fill={`url(#${id}-ground)`} />
       <line className="sd-groundline" x1="0" y1={G} x2="480" y2={G} />
-      {spec.draw(id, c)}
+      {spec.draw(id, c, <Veil id={id} f={spec.focus} />)}
     </svg>
   )
   if (compact) return <div className="sd-thumb">{svg}</div>
   return (
-    <figure className="sd-figure">
+    <figure className="sd-figure" style={{ '--sd-accent': c.c500 }}>
       <div className="sd-canvas" style={{ '--sd-accent': c.c500 }}>{svg}</div>
       <figcaption>
         <span className="eyebrow">איך זה נראה על החזית</span>
         <ol className="sd-legend">
           {spec.notes.map(([s, t], i) => (
-            <li key={i}><span className="sd-legend-n">{i + 1}</span><span><Section s={s} /> {t}</span></li>
+            <li key={i} className={String(i + 1) === hl ? 'is-hl' : ''} onMouseEnter={() => setHl(String(i + 1))} onMouseLeave={() => setHl(null)}><span className="sd-legend-n">{i + 1}</span><span><Section s={s} /> {t}</span></li>
           ))}
         </ol>
         <p className="caption">חזית סכמטית, לא בקנה מידה. המידות לפי המדיניות.</p>
