@@ -25,7 +25,7 @@ const errors = []
 const requests = []
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
-async function setup(page, { staff = false, schema = false } = {}) {
+async function setup(page, { staff = false, schema = false, isStaff = staff } = {}) {
   page.on('pageerror', (e) => errors.push(`${page.url()} :: ${e.message}`))
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::|ERR_|tiles|style|AJAXError|openfreemap|unpkg|fonts/i.test(m.text())) errors.push(`${page.url()} :: console ${m.text()}`) })
   await page.route('https://nominatim.openstreetmap.org/**', (r) => json(r, [{ display_name: 'שבי ציון 12, רובע א, אשדוד, ישראל', lat: '31.808', lon: '34.645' }]))
@@ -38,8 +38,13 @@ async function setup(page, { staff = false, schema = false } = {}) {
     requests.push(`${req.method()} ${p}${url.search}`)
     if (p.startsWith('/auth/v1/user')) return json(route, { id: 'u1', email: 'shtanat5@gmail.com', aud: 'authenticated', role: 'authenticated' })
     if (p.startsWith('/auth/v1/otp')) return json(route, {})
+    if (p.startsWith('/auth/v1/verify')) {
+      const body = req.postDataJSON?.() || {}
+      if (body.token_hash !== 'goodhash') return json(route, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' }, 403)
+      return json(route, { access_token: 'x.eyJleHAiOjk5OTk5OTk5OTl9.x', token_type: 'bearer', expires_in: 3600, expires_at: 9999999999, refresh_token: 'r2', user: { id: 'u1', email: 'shtanat5@gmail.com', aud: 'authenticated', role: 'authenticated' } })
+    }
     if (p.startsWith('/auth/v1/logout')) return route.fulfill({ status: 204 })
-    if (p === '/rest/v1/rpc/is_staff') return json(route, staff)
+    if (p === '/rest/v1/rpc/is_staff') return json(route, isStaff)
     if (p === '/rest/v1/rpc/ks_submit_application') return json(route, 'KS-ABC123')
     if (p === '/rest/v1/rpc/ks_track_application') return json(route, [{ ...app, category: 'שלט בית עסק', last_decision: null, updated_at: app.created_at }])
     const table = p.replace('/rest/v1/', '')
@@ -261,6 +266,28 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.locator('.steps').getByRole('tab', { name: 'תוקף והגדרות' }).click()
     await page.screenshot({ path: `${OUT}/staff-settings.png`, fullPage: true })
     await page.getByRole('button', { name: 'יציאה' }).click()
+  })
+  await ctx.close()
+}
+
+// כניסה מקישור שהודבק: הקישור מהמייל, והכתובת שנפתחה ב-localhost
+for (const [label, link, viaVerify] of [
+  ['rescue: expired email link', 'https://cbhexpybdggwzyakgagd.supabase.co/auth/v1/verify?token=oldhash&type=magiclink&redirect_to=http://localhost:3000', null],
+  ['rescue: email link', 'https://cbhexpybdggwzyakgagd.supabase.co/auth/v1/verify?token=goodhash&type=magiclink&redirect_to=http://localhost:3000', true],
+  ['rescue: localhost address', 'http://localhost:3000/#access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1MSIsImV4cCI6OTk5OTk5OTk5OSwiZW1haWwiOiJzaHRhbmF0NUBnbWFpbC5jb20iLCJyb2xlIjoiYXV0aGVudGljYXRlZCIsImF1ZCI6ImF1dGhlbnRpY2F0ZWQifQ.c2lnbmF0dXJl&expires_at=9999999999&expires_in=3600&refresh_token=r3&token_type=bearer&type=magiclink', false],
+]) {
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'he-IL' })
+  const page = await ctx.newPage()
+  currentPage = page
+  await setup(page, { schema: true, isStaff: true })
+  await step(label, async () => {
+    await page.goto(BASE + '/staff')
+    await page.getByRole('heading', { name: 'כניסת צוות' }).waitFor()
+    await page.getByLabel('הקישור מהמייל או הכתובת שנפתחה').fill(link)
+    await page.getByRole('button', { name: 'כניסה עם הקישור' }).click()
+    if (viaVerify === null) { await page.getByText('תוקף הקישור פג').waitFor(); return }
+    await page.getByRole('heading', { name: 'לוח הצוות' }).waitFor()
+    if (viaVerify && !requests.some((r) => r.startsWith('POST /auth/v1/verify'))) throw new Error('לא נשלח אימות לקישור')
   })
   await ctx.close()
 }

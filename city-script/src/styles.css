@@ -607,3 +607,4 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 .ps-render-hint small { font-size: .85em; opacity: .75; }
 .ps-render-clear { position: absolute; top: 6px; inset-inline-end: 6px; appearance: none; border: 0; font: inherit; font-size: 11px; padding: 4px 8px; background: rgba(19,34,44,.72); color: #fff; cursor: pointer; opacity: 0; transition: opacity .2s; }
 .project-sign:hover .ps-render-clear, .ps-render-clear:focus-visible { opacity: 1; }
+.rescue { display: grid; gap: var(--space-3); margin-top: var(--space-5); background: linear-gradient(160deg, var(--sand), var(--surface-raised)); }

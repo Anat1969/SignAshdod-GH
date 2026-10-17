@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import CityMap from '../components/CityMap'
 import { supabase } from '../lib/supabase'
+import { signInFromPastedLink } from '../lib/authRescue'
 import { useData } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
 import { Tag, Section, Loading, SchemaNotice } from '../components/bits'
@@ -18,6 +19,15 @@ function Login() {
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
+  const [pasted, setPasted] = useState('')
+  const [rescueErr, setRescueErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const rescue = async (e) => {
+    e.preventDefault(); setRescueErr(''); setBusy(true)
+    const r = await signInFromPastedLink(pasted)
+    setBusy(false)
+    if (r.error) setRescueErr(r.error)
+  }
   const send = async (e) => {
     e.preventDefault(); setErr('')
     const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/staff' } })
@@ -42,6 +52,13 @@ function Login() {
           <button className="btn btn-primary" disabled={sent ? !code.trim() : !email.trim()}>{sent ? 'כניסה עם קוד' : 'שליחת קישור כניסה'}</button>
           {sent && <button type="button" className="btn btn-quiet" onClick={() => { setSent(false); setCode('') }}>דוא"ל אחר</button>}
         </div>
+      </form>
+      <form className="panel rescue" onSubmit={rescue}>
+        <span className="eyebrow">הקישור מהמייל פתח דף שגיאה או localhost?</span>
+        <p className="muted">העתיקו את הקישור מהכפתור במייל (לחיצה ימנית, "העתקת כתובת הקישור"), או את הכתובת המלאה של הדף שנפתח, והדביקו כאן.</p>
+        <label className="field">הקישור מהמייל או הכתובת שנפתחה<input value={pasted} onChange={(e) => setPasted(e.target.value)} dir="ltr" placeholder="https://...  או  http://localhost:3000/#access_token=..." /></label>
+        {rescueErr && <div className="notice notice-warn">{rescueErr}</div>}
+        <div className="row"><button className="btn" disabled={!pasted.trim() || busy}>{busy ? 'נכנסים...' : 'כניסה עם הקישור'}</button></div>
       </form>
     </div>
   )
