@@ -251,6 +251,7 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.getByLabel('קוד מעקב או טלפון נייד').fill('050-1234567')
     await page.getByRole('button', { name: 'בדיקה' }).click()
     await page.getByRole('listitem').filter({ hasText: 'KS-TEST02' }).click()
+    await page.locator('.panel.sail', { hasText: 'KS-TEST01' }).waitFor()
     if (!requests.some((r) => r.includes('rpc/ks_track_by_phone'))) throw new Error('לא בוצע חיפוש לפי טלפון')
     await nav('צוות העירייה')
     await page.getByLabel('דוא"ל').fill('shtanat5@gmail.com')
