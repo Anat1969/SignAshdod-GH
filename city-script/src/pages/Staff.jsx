@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { signInFromPastedLink } from '../lib/authRescue'
 import { useData } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Tag, Section, Loading, SchemaNotice } from '../components/bits'
 import { UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 
@@ -43,6 +44,7 @@ function Login() {
     <div className="page" style={{ maxWidth: 560 }}>
       <div className="page-head"><span className="eyebrow">צוות העירייה</span><h1>כניסת צוות</h1>
         <p className="lead">אדריכלות העיר, ועדת השילוט והפיקוח. הכניסה בקישור או בקוד שנשלח לדוא"ל.</p></div>
+      <PageGuide steps={[['מזינים דוא"ל של צוות ושולחים', sent], ['לוחצים על הקישור במייל, או מדביקים אותו בשדה למטה', false], ['נכנסים ללוח הצוות: בקשות, דיווחים ותעריפים', false]]} />
       <form className="panel" onSubmit={sent ? verify : send} style={{ display: 'grid', gap: 'var(--space-4)' }}>
         <label className="field">דוא"ל<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" disabled={sent} /></label>
         {sent && <><p className="muted">נשלח מייל. לחצו על הקישור שבו, או הזינו כאן את הקוד אם הופיע במייל.</p>

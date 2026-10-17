@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import CityMap from '../components/CityMap'
 import { useData } from '../lib/data'
 import { useStrip } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Loading, Tag } from '../components/bits'
 import { land } from '../lib/landscapes'
 import { zoneAt } from '../lib/geo'
@@ -25,6 +26,7 @@ export function RoutesIndex() {
         <h1>המסלול מסביר את הכלל</h1>
         <p className="lead">המסלולים נבנו מרשימת המבנים והאתרים לשימור של העיר. לכל מסלול נוסף רובד של שילוט: מה מותר לאורכו ולמה.</p>
       </div>
+      <PageGuide steps={[['מעבר על כרטיס מדגיש את המסלול במפה', !!hover], ['בוחרים מסלול', false], ['עוברים בין התחנות וקוראים את הכלל שחל בכל אחת', false]]} />
       <div className="split">
         <div className="choice-grid" style={{ gridTemplateColumns: 'minmax(0,1fr)' }} onMouseLeave={() => setHover(null)}>
           {routes.map((r, i) => (

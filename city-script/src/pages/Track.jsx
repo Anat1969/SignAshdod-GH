@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useStrip } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Tag } from '../components/bits'
 
 const statusTag = (s) => s === 'אושרה' ? 'pass' : s === 'נדחתה' ? 'fail' : s === 'הוחזרה לתיקון' ? 'review' : 'neutral'
@@ -27,6 +28,7 @@ export default function Track() {
         <span className="eyebrow">מבקש · מעקב</span>
         <h1>איפה הבקשה שלי?</h1>
       </div>
+      <PageGuide steps={[['מקלידים את קוד המעקב שקיבלתם בהגשה (KS-...)', !!code.trim()], ['לוחצים "בדיקה"', !!row || !!msg], ['רואים את הסטטוס ואת ההחלטה האחרונה', !!row]]} />
       <form className="row" onSubmit={(e) => { e.preventDefault(); setParams({ code }); look() }} style={{ maxWidth: 520 }}>
         <label className="field" style={{ flex: '1 1 220px' }}>קוד מעקב<input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KS-XXXXXX" dir="ltr" /></label>
         <button className="btn btn-primary" disabled={!code.trim()}>בדיקה</button>

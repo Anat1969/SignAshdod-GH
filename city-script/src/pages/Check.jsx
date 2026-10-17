@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import CityMap from '../components/CityMap'
 import { useData, rulesFor, categoryBySlug } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { geocode, zoneAt } from '../lib/geo'
 import { evaluate, nearbyPreservation, OVERALL_TEXT, rateFor, computeFee, UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 import { land } from '../lib/landscapes'
@@ -86,6 +87,8 @@ export default function Check() {
         <h1>מה מותר לתלות כאן?</h1>
         <p className="lead">הבדיקה אינה אישור. היא מראה מראש מה תואם, מה ייבדק בוועדה ומה כדאי לשנות, עם הפניה לסעיף.</p>
       </div>
+      <PageGuide steps={[['מסמנים את מקום השלט: כתובת או לחיצה על המפה', !!point], ['בוחרים את סוג השלט', !!cat], ['עונים על השאלות: כן, לא או לא יודע', step >= 3], ['קוראים את התוצאה לפי סעיף', step >= 4], ['מגישים בקשה ומקבלים קוד מעקב', !!code]]}
+        note="התוצאה אינה אישור. היא מראה מה תואם, מה ייבדק בוועדה ומה כדאי לשנות." />
 
       <div className="steps no-print" role="tablist">
         {STEPS.map((s, i) => (
@@ -150,7 +153,7 @@ export default function Check() {
                 <span>{q.text}</span>
                 <span className="yesno">
                   {[['yes', 'כן'], ['no', 'לא'], ['unknown', 'לא יודע']].map(([v, l]) => (
-                    <button key={v} className={`btn btn-sm ${answers[q.id] === v ? 'selected' : ''}`} onClick={() => setAnswers((a) => ({ ...a, [q.id]: v }))} aria-pressed={answers[q.id] === v}>{l}</button>
+                    <button key={v} className={`btn btn-sm yn yn-${v} ${answers[q.id] === v ? 'selected' : ''}`} onClick={() => setAnswers((a) => ({ ...a, [q.id]: v }))} aria-pressed={answers[q.id] === v}>{l}</button>
                   ))}
                 </span>
               </li>

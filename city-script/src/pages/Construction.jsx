@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData, rulesFor } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Section, Tag, Loading } from '../components/bits'
 import { rateFor, computeFee, UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 
@@ -106,6 +107,7 @@ export default function Construction() {
         <h1>שלט אתר וגדר מדברת</h1>
         <p className="lead">כותבים ישירות על השלט. הפורמט אחיד בכל העיר: משתנים רק פרטי הפרויקט, היועצים וההדמיה. הבקשה נשמרת לפי שם הפרויקט, יחד עם הגדר אם יש.</p>
       </div>
+      <PageGuide steps={[['כותבים על השלט את שם הפרויקט, מספר ההיתר והיועצים', !!(name && sign.permit)], ['טוענים את הדמיית ההיתר לתוך השלט', !!sign.render], ['אם יש גדר מדברת: מדליקים את המתג וממלאים את הטבלה', !hasFence || !!fence.length], ['מסמנים את המסמכים שמוכנים', doneCount === CHECKLIST.length], ['שומרים את הבקשה לפי שם הפרויקט', !!savedAt]]} />
 
       <section className="ps-stage">
         <div className="project-sign ps-editable" aria-label="שלט האתר בפורמט האחיד. כל שדה ניתן לכתיבה.">
@@ -212,7 +214,7 @@ export default function Construction() {
               <li key={k}>
                 <Section s={s} />
                 <span>{t}</span>
-                <button className={`btn btn-sm ${done[k] ? 'selected' : ''}`} onClick={() => setDone((x) => ({ ...x, [k]: !x[k] }))} aria-pressed={!!done[k]}>{done[k] ? 'מוכן' : 'לסמן'}</button>
+                <button className={`btn btn-sm chk ${done[k] ? 'selected' : ''}`} onClick={() => setDone((x) => ({ ...x, [k]: !x[k] }))} aria-pressed={!!done[k]}>{done[k] ? 'מוכן' : 'לסמן'}</button>
               </li>
             ))}
           </ul>
@@ -221,7 +223,7 @@ export default function Construction() {
           <h2>מסלול האישור</h2>
           <ol className="rules" style={{ listStyle: 'none' }}>
             {['הגשת טופס הבקשה עם הדמיה, מיקום ופריסה', 'תיאום וקבלת אישור אדריכלית העיר', 'העברת הבקשה לוועדת השילוט', 'חתימת פיקוח עירוני ותאריך'].map((t, i) => (
-              <li key={t}><span className="section-ref">{i + 1}</span><span>{t}</span><Tag status="info">שלב</Tag></li>
+              <li key={t}><span className="section-ref">{i + 1}</span><span>{t}</span><Tag status="step">שלב {i + 1}</Tag></li>
             ))}
           </ol>
           <div className="row no-print">
@@ -230,7 +232,7 @@ export default function Construction() {
           </div>
           <details>
             <summary className="muted" style={{ cursor: 'pointer' }}>הכללים המלאים ({rules.length})</summary>
-            <ul className="rules" style={{ marginTop: 'var(--space-3)' }}>{rules.map((r) => <li key={r.id}><Section s={r.section} /><span>{r.text}</span><Tag status="info">{r.kind === 'question' ? 'תנאי' : 'דרישה'}</Tag></li>)}</ul>
+            <ul className="rules" style={{ marginTop: 'var(--space-3)' }}>{rules.map((r) => <li key={r.id}><Section s={r.section} /><span>{r.text}</span><Tag status={r.kind === 'question' ? 'must' : 'info'}>{r.kind === 'question' ? 'תנאי' : 'דרישה'}</Tag></li>)}</ul>
           </details>
         </div>
       </section>

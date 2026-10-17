@@ -608,3 +608,55 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 .ps-render-clear { position: absolute; top: 6px; inset-inline-end: 6px; appearance: none; border: 0; font: inherit; font-size: 11px; padding: 4px 8px; background: rgba(19,34,44,.72); color: #fff; cursor: pointer; opacity: 0; transition: opacity .2s; }
 .project-sign:hover .ps-render-clear, .ps-render-clear:focus-visible { opacity: 1; }
 .rescue { display: grid; gap: var(--space-3); margin-top: var(--space-5); background: linear-gradient(160deg, var(--sand), var(--surface-raised)); }
+
+/* ===== סימנים על תגיות וכפתורים: וי, איקס, סימן שאלה, חובה. הסימן לא נקרא בקול (alt ריק) ===== */
+.tag::before { width: auto; height: auto; background: none; font-weight: 700; font-size: 13px; line-height: 1; display: inline-grid; place-items: center; min-width: 14px; }
+.tag-pass::before { content: "✓" / ""; }
+.tag-fail::before { content: "✗" / ""; }
+.tag-review::before { content: "?" / ""; }
+.tag-must { color: var(--port-ink); }
+.tag-must::before { content: "!" / ""; }
+.tag-info::before { content: "•" / ""; font-size: 16px; }
+.tag-neutral::before { content: "◦" / ""; font-size: 15px; }
+.tag-step { color: var(--sea-ink); }
+.tag-step::before { content: "○" / ""; font-size: 11px; }
+.tag-pass, .tag-fail, .tag-must { background: color-mix(in srgb, currentColor 8%, transparent); }
+.yn::before { font-weight: 700; margin-inline-end: 2px; }
+.yn-yes::before { content: "✓" / ""; color: var(--nahal-ink); }
+.yn-no::before { content: "✗" / ""; color: var(--port-ink); }
+.yn-unknown::before { content: "?" / ""; color: var(--dune-ink); }
+.yn.selected.yn-yes { background: color-mix(in srgb, var(--nahal-500) 14%, var(--surface-raised)); border-color: var(--nahal-ink); box-shadow: inset 0 0 0 1px var(--nahal-ink); }
+.yn.selected.yn-no { background: color-mix(in srgb, var(--port-500) 12%, var(--surface-raised)); border-color: var(--port-ink); box-shadow: inset 0 0 0 1px var(--port-ink); }
+.yn.selected.yn-unknown { background: color-mix(in srgb, var(--dune-500) 14%, var(--surface-raised)); border-color: var(--dune-ink); box-shadow: inset 0 0 0 1px var(--dune-ink); }
+.chk::before { content: "" / ""; width: 13px; height: 13px; border: 1.5px solid currentColor; border-radius: 2px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.chk.selected { color: var(--nahal-ink); border-color: var(--nahal-ink); box-shadow: inset 0 0 0 1px var(--nahal-ink); background: color-mix(in srgb, var(--nahal-500) 12%, var(--surface-raised)); }
+.chk.selected::before { content: "✓" / ""; background: var(--nahal-ink); color: #fff; border-color: var(--nahal-ink); }
+
+/* ===== סיכה ננעצת על המפה ===== */
+.pin { width: 32px; height: 44px; cursor: grab; }
+.pin-body { filter: drop-shadow(0 6px 6px rgba(19,34,44,.35)); animation: pin-drop .55s cubic-bezier(.3,1.5,.5,1) both; }
+.pin-body.pin-drop { animation: pin-drop2 .55s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes pin-drop2 { 0% { transform: translateY(-40px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.pin:active { cursor: grabbing; }
+.pin svg { display: block; }
+.pin-shadow { position: absolute; left: 50%; bottom: -3px; width: 14px; height: 5px; margin-left: -7px; border-radius: 50%; background: rgba(19,34,44,.35); filter: blur(1.5px); }
+@keyframes pin-drop { 0% { transform: translateY(-40px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.pin-status { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-3); background: var(--sand); font-size: 14px; line-height: 20px; }
+.pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink-muted); }
+.pin-dot.on { background: var(--port-500); border-color: var(--port-500); box-shadow: 0 0 0 4px color-mix(in srgb, var(--port-500) 25%, transparent); }
+@media (max-width: 640px) { .pin-status { grid-template-columns: auto minmax(0, 1fr); } .pin-status .btn { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .pin-body, .pin-body.pin-drop { animation: none; } }
+
+/* ===== מה עושים כאן ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pguide { margin: calc(var(--space-5) * -1) 0 var(--space-6); padding: var(--space-4) var(--space-5); background: var(--sheen), var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow: var(--shadow-1); display: grid; gap: var(--space-3); }
+.pguide-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: baseline; }
+.pguide-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: var(--space-3); counter-reset: none; }
+.pguide-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: var(--space-2); align-items: start; font-size: 14px; line-height: 21px; color: var(--ink-muted); padding: 6px 8px; border-radius: 2px; transition: background .3s, color .3s; }
+.pguide-n { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; background: var(--surface-raised); transition: all .3s var(--ease); }
+.pguide-steps li.is-now { color: var(--ink); background: color-mix(in srgb, var(--sea-500) 8%, transparent); }
+.pguide-steps li.is-now .pguide-n { border-color: var(--sea-ink); color: var(--sea-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sea-500) 18%, transparent); }
+.pguide-steps li.is-done { color: var(--ink); }
+.pguide-steps li.is-done .pguide-n { background: var(--nahal-ink); border-color: var(--nahal-ink); color: #fff; }
+.pguide-steps li.is-done .pguide-n::before { content: "✓" / ""; font-family: var(--sans); font-weight: 700; font-size: 13px; }
+.pguide-note { margin: 0; }

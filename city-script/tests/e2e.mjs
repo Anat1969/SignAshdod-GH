@@ -214,7 +214,9 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await nav('דיווח')
     await page.getByLabel('כתובת (לא חובה)').fill('שבי ציון 12')
     await page.getByRole('button', { name: 'איתור' }).click()
+    await page.locator('.pin-status', { hasText: 'המיקום נדקר במפה' }).waitFor()
     await page.getByLabel('מה ראיתם').fill('שלט מתפרק מעל המדרכה')
+    if (await page.locator('.pguide li.is-done').count() < 2) throw new Error('ההסבר בדף לא מסמן את הצעדים שנעשו')
     await page.getByRole('button', { name: 'שליחת הדיווח' }).click()
     await page.getByText(/קליטת דיווחים תופעל|הדיווח התקבל/).waitFor()
     if (!requests.some((r) => r.startsWith('POST /rest/v1/ks_reports'))) throw new Error('לא נשלח דיווח')
@@ -266,6 +268,44 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.locator('.steps').getByRole('tab', { name: 'תוקף והגדרות' }).click()
     await page.screenshot({ path: `${OUT}/staff-settings.png`, fullPage: true })
     await page.getByRole('button', { name: 'יציאה' }).click()
+  })
+  await ctx.close()
+}
+
+// כל דף נפתח ישירות מהכתובת (כניסה מקישור, לא דרך הניווט)
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'he-IL' })
+  const page = await ctx.newPage()
+  currentPage = page
+  await setup(page)
+  for (const path of ['/', '/check', '/construction', '/guide', '/guide/business', '/routes', '/routes/route-8', '/fees', '/report', '/track', '/staff']) {
+    await step(`direct ${path}`, async () => {
+      const before = errors.length
+      await page.goto(BASE + path)
+      await page.locator('main h1').first().waitFor()
+      if (errors.length > before) throw new Error('שגיאה בטעינה ישירה')
+    })
+  }
+  await ctx.close()
+}
+
+// בלי לרענן: השרת נופל בטעינה הראשונה, והמסלולים מגיעים לבד בניסיון החוזר
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'he-IL' })
+  const page = await ctx.newPage()
+  currentPage = page
+  let downUntil = 0, fails = 0
+  await setup(page)
+  await page.route(`${SB}/rest/v1/shimur_routes**`, async (route) => {
+    if (Date.now() < downUntil) { fails++; return route.abort('connectionreset') }
+    return route.fallback()
+  })
+  await step('auto retry without refresh', async () => {
+    downUntil = Date.now() + 20000
+    await page.goto(BASE + '/routes')
+    await page.getByText('המסלולים לא נטענו כרגע').waitFor({ timeout: 25000 })
+    await page.getByRole('link', { name: /חוף הים/ }).waitFor({ timeout: 45000 })
+    if (!fails) throw new Error('התקלה המדומה לא הופעלה')
   })
   await ctx.close()
 }

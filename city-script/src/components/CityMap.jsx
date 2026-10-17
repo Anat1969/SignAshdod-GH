@@ -121,11 +121,18 @@ export default function CityMap({
     if (!ready || !map) return
     if (!marker) { markerRef.current?.remove(); markerRef.current = null; return }
     if (!markerRef.current) {
+      // סיכה ננעצת: נופלת למקום, ואפשר לגרור אותה לדיוק
       const el = document.createElement('div')
-      el.style.cssText = 'width:22px;height:22px;background:#E8552A;border:3px solid #F4F5F6;box-shadow:0 0 0 1px #13222C;'
-      el.setAttribute('aria-label', 'המיקום שנבחר')
-      markerRef.current = new maplibregl.Marker({ element: el }).setLngLat(marker).addTo(map)
-    } else markerRef.current.setLngLat(marker)
+      el.className = 'pin'
+      el.setAttribute('aria-label', 'המיקום שנבחר. אפשר לגרור לדיוק.')
+      el.innerHTML = '<div class="pin-body"><svg viewBox="0 0 32 44" width="32" height="44" aria-hidden="true"><path d="M16 1C7.7 1 1 7.6 1 15.8 1 27 16 43 16 43s15-16 15-27.2C31 7.6 24.3 1 16 1z" fill="#E8552A" stroke="#13222C" stroke-width="1.2"/><circle cx="16" cy="15.5" r="5.5" fill="#F4F5F6"/></svg></div><span class="pin-shadow"></span>'
+      markerRef.current = new maplibregl.Marker({ element: el, anchor: 'bottom', draggable: !!handlers.current.onMapClick }).setLngLat(marker).addTo(map)
+      markerRef.current.on('dragend', () => { const ll = markerRef.current.getLngLat(); handlers.current.onMapClick?.([ll.lng, ll.lat]) })
+    } else {
+      markerRef.current.setLngLat(marker)
+      const body = markerRef.current.getElement().querySelector('.pin-body')
+      if (body) { body.classList.remove('pin-drop'); void body.offsetWidth; body.classList.add('pin-drop') }
+    }
   }, [ready, marker])
 
   useEffect(() => {

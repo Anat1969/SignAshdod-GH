@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, isMissingTable } from './supabase'
 import * as seed from '../seed/policy'
 
@@ -44,7 +44,7 @@ export function DataProvider({ children }) {
   const [isStaff, setIsStaff] = useState(false)
 
   const load = useCallback(async () => {
-    const [cats, rules, zones, notes, fees, settings, quarters, routes, sites, buildings] = await Promise.all([
+    const settled = await Promise.allSettled([
       supabase.from('ks_categories').select('*').order('sort'),
       supabase.from('ks_rules').select('*').eq('active', true).order('sort'),
       supabase.from('ks_zones').select('*'),
@@ -56,6 +56,7 @@ export function DataProvider({ children }) {
       supabase.from('shimur_route_sites').select('route_id,building_id,position,narrative_text').order('position'),
       supabase.from('shimur_buildings').select('id,name,address,neighborhood,lat,lng,protection_level,style,year_built,current_use,coords_approx'),
     ])
+    const [cats, rules, zones, notes, fees, settings, quarters, routes, sites, buildings] = settled.map((r) => (r.status === 'fulfilled' ? r.value : { data: null, error: r.reason || new Error('network') }))
     const schemaReady = !cats.error && (cats.data || []).length > 0
     const quartersData = quarters.data || []
     const categories = schemaReady ? cats.data : seed.categories.map((c) => ({ ...c, default_validity_months: c.default_validity_months ?? null }))
@@ -80,11 +81,26 @@ export function DataProvider({ children }) {
       settings: settingsMap,
       routes: routeList,
       buildings: buildings.data || [],
-      loadError: quarters.error && routes.error ? 'לא ניתן להתחבר כרגע לשרת הנתונים. מוצגים נתוני הבסיס.' : null,
+      loadError: quarters.error || routes.error || sites.error || buildings.error ? 'חלק מהנתונים לא נטען. מנסים שוב אוטומטית.' : null,
     })
   }, [])
 
+  // בלי צורך לרענן: אם השרת לא ענה בטעינה הראשונה, מנסים שוב לבד, וגם כשחוזרים ללשונית או כשהרשת חוזרת.
+  const tries = useRef(0)
+  const failed = !!state.loadError
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!failed) { tries.current = 0; return }
+    if (tries.current >= 4) return
+    const t = setTimeout(() => { tries.current += 1; load() }, [1500, 4000, 10000, 30000][tries.current])
+    return () => clearTimeout(t)
+  }, [failed, state, load])
+  useEffect(() => {
+    const again = () => { if (document.visibilityState === 'visible' && failed) { tries.current = 0; load() } }
+    window.addEventListener('online', again)
+    document.addEventListener('visibilitychange', again)
+    return () => { window.removeEventListener('online', again); document.removeEventListener('visibilitychange', again) }
+  }, [failed, load])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
