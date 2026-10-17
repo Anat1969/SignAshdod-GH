@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import CityMap from '../components/CityMap'
 import { useData } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
 import PageGuide from '../components/PageGuide'
 import { supabase } from '../lib/supabase'
-import { geocode } from '../lib/geo'
+import { geocode, reverseGeocode } from '../lib/geo'
 import { Loading } from '../components/bits'
 
 export default function Report() {
@@ -17,14 +17,20 @@ export default function Report() {
   const [state, setState] = useState('idle')
   const [err, setErr] = useState('')
   const [locating, setLocating] = useState(false)
+  const autoAddr = useRef(false)
   useStrip('דיווח תושב', state === 'sent' ? 'הדיווח הועבר לפיקוח העירוני. תודה.' : point ? 'תארו בקצרה מה ראיתם.' : 'סמנו על המפה שלט שנראה לא תקין, מסוכן או מסתיר.', 'var(--estuary-500)')
   if (d.loading) return <Loading />
   const find = async () => { setErr(''); try { const r = await geocode(address); if (r[0]) setPoint([r[0].lng, r[0].lat]); else setErr('הכתובת לא נמצאה. סמנו על המפה.') } catch (e) { setErr(e.message) } }
+  // דקירה: הסיכה נועצת והכתובת נכנסת לשדה, כל עוד המשתמש לא כתב כתובת משלו
+  const pin = async (p) => {
+    setPoint(p)
+    try { const label = await reverseGeocode(p); setAddress((cur) => (cur && !autoAddr.current ? cur : label)); autoAddr.current = true } catch { /* אפשר להקליד ידנית */ }
+  }
   const locate = () => {
     if (!navigator.geolocation) { setErr('הדפדפן לא מאפשר איתור מיקום. סמנו על המפה.'); return }
     setLocating(true); setErr('')
     navigator.geolocation.getCurrentPosition(
-      (pos) => { setLocating(false); setPoint([pos.coords.longitude, pos.coords.latitude]) },
+      (pos) => { setLocating(false); pin([pos.coords.longitude, pos.coords.latitude]) },
       () => { setLocating(false); setErr('לא התקבל מיקום. אשרו גישה למיקום, או סמנו על המפה.') },
       { enableHighAccuracy: true, timeout: 10000 },
     )
@@ -51,7 +57,7 @@ export default function Report() {
           ) : (
             <>
               <div className="row">
-                <label className="field" style={{ flex: '1 1 200px' }}>כתובת (לא חובה)<input value={address} onChange={(e) => setAddress(e.target.value)} /></label>
+                <label className="field" style={{ flex: '1 1 200px' }}>כתובת (לא חובה)<input value={address} onChange={(e) => { autoAddr.current = false; setAddress(e.target.value) }} placeholder="מתמלאת לבד אחרי דקירה" /></label>
                 <button type="button" className="btn" onClick={find} disabled={!address.trim()}>איתור</button>
               </div>
               <div className="pin-status">
@@ -66,7 +72,7 @@ export default function Report() {
             </>
           )}
         </form>
-        <CityMap zones={d.zones} showZones={false} marker={point} fitTo={point} height={520} onMapClick={(p) => state !== 'sent' && setPoint(p)} interactiveHint="לחיצה על המפה נועצת סיכה. אפשר לגרור אותה." />
+        <CityMap zones={d.zones} showZones={false} marker={point} fitTo={point} height={520} onMapClick={(p) => state !== 'sent' && pin(p)} interactiveHint="לחיצה על המפה נועצת סיכה. אפשר לגרור אותה." />
       </div>
     </div>
   )

@@ -3,7 +3,7 @@
 כלי שילוט עירוני לאשדוד. Vite + React + framer-motion + MapLibre (OpenFreeMap) + Supabase.
 
 - האפליקציה הקיימת בשורש הריפו לא נוגעים בה. כל העבודה בתיקייה city-script/.
-- Supabase: פרויקט ASHDODMAP (cbhexpybdggwzyakgagd), משותף. כל טבלה חדשה בקידומת ks_. המיגרציה ב-supabase/001_schema.sql, ומחילים אותה רק אחרי אישור של ענת. עד אז האפליקציה עובדת מנתוני הבסיס (src/seed/policy.js, ו-seed/policy.mjs כמקור).
+- Supabase: פרויקט ASHDODMAP (cbhexpybdggwzyakgagd), משותף. כל טבלה חדשה בקידומת ks_. המיגרציות 001 ו-002 הוחלו (באישור ענת, 17.10.2026): טבלאות ks_, RLS, פונקציות הגשה ומעקב (כולל לפי טלפון), ks_save_site_request, דלי פרטי ks-docs, ונתוני בסיס מ-seed/policy.mjs. שינוי מבני גדול ב-Storage נתקע על נעילה: להריץ עם set lock_timeout. כלי המיגרציה נופל על בקשות ארוכות: לפצל.
 - כל כלל נושא סעיף מקור מהמדיניות. אין כלל בלי סעיף.
 - Vercel: פרויקט ktav-hair-ashdod, rootDirectory=city-script, ציבורי (ssoProtection כבוי). כתובת: https://ktav-hair-ashdod.vercel.app
 - בדיקה: `npm run build && npm run preview`, ואז `node tests/e2e.mjs`. ממתינים ל-response של המוק ולא ל-request (אחרת יש מרוץ).
@@ -21,6 +21,9 @@
 - בלי רענון: DataProvider טוען עם allSettled, ואם משהו נכשל מנסה שוב (1.5, 4, 10, 30 שניות) וגם בחזרה ללשונית או לרשת. e2e מדמה נפילה של 20 שניות.
 - PageGuide: בכל דף "מה עושים כאן" עם צעדים, מה נעשה ומה הבא.
 - hooks לפני כל return מוקדם. e2e פותח כל דף ישירות מהכתובת כדי לתפוס את זה.
+- טעינת מסמך ו"מלא": src/lib/docExtract.js קורא בדפדפן PDF (וסריקה דרך OCR), Word docx, Excel xlsx, CSV, טקסט, HTML, מייל ותמונות; parseFields ממפה לשדות לפי תוויות. OCR עם tesseract.js מוגש מ-/ocr (scripts/copy-ocr.mjs ב-prebuild). רכיב DocImport בהגשה ובלשונית "קליטה ידנית" בצוות. המסמך המקורי נשמר בדלי ks-docs. e2e בודק 6 פורמטים אמיתיים (tests/make-fixtures.mjs).
+- דקירה: reverseGeocode (Nominatim reverse) ממלא כתובת בשדה, ואפשר לשנות.
+- מעקב: קוד או טלפון נייד; לפי טלפון מוצגת רשימה לבחירה.
 - Shell.jsx: בלי AnimatePresence סביב העמוד. motion.div עם key ואנימציית כניסה בלבד, אחרת הקלט שהוקלד נמחק.
 
 ## תיקונים של ענת
@@ -38,3 +41,7 @@
 - דיווח: אפשרות דקירת סיכה.
 - דפים מקבלים תוכן בלי רענון.
 - בכל דף הסבר: מה נעשה ומה צריך להיעשות.
+- להכניס מסמך מכל סוג, כפתור "מלא" שממלא את השדות, ושמירה.
+- לבנות את כל מאגרי המידע הנדרשים.
+- אחרי דקירה: הכתובת בשדה, עם אפשרות לשנות ולשמור.
+- מעקב לפי טלפון נייד שמציג את כל הבקשות לבחירה.

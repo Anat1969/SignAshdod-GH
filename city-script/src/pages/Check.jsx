@@ -4,7 +4,9 @@ import CityMap from '../components/CityMap'
 import { useData, rulesFor, categoryBySlug } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
 import PageGuide from '../components/PageGuide'
-import { geocode, zoneAt } from '../lib/geo'
+import { geocode, reverseGeocode, zoneAt } from '../lib/geo'
+import DocImport from '../components/DocImport'
+import { uploadDoc } from '../lib/uploadDoc'
 import { evaluate, nearbyPreservation, OVERALL_TEXT, rateFor, computeFee, UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 import { land } from '../lib/landscapes'
 import { Tag, Section, Loading, SchemaNotice } from '../components/bits'
@@ -28,7 +30,10 @@ export default function Check() {
   const [point, setPoint] = useState(null)
   const [address, setAddress] = useState('')
   const [answers, setAnswers] = useState({})
-  const [form, setForm] = useState({ applicant_name: '', phone: '', email: '', business_name: '', sign_area_sqm: '' })
+  const [form, setForm] = useState({ applicant_name: '', phone: '', email: '', business_name: '', sign_area_sqm: '', notes: '' })
+  const [docFile, setDocFile] = useState(null)
+  const [filled, setFilled] = useState({})
+  const [locating, setLocating] = useState(false)
   const [sending, setSending] = useState(false)
   const [code, setCode] = useState('')
   const [sendError, setSendError] = useState('')
@@ -71,7 +76,9 @@ export default function Check() {
     e.preventDefault()
     setSendError(''); setSending(true)
     const check_result = { overall: result.overall, items: result.items.filter((i) => i.status !== 'info').map((i) => ({ section: i.rule.section, text: i.rule.text, status: i.status, why: i.why || null })) }
+    const documents = docFile ? [await uploadDoc(docFile)].filter(Boolean) : []
     const payload = { ...form, address, lat: point?.[1] ?? '', lng: point?.[0] ?? '', zone_id: zone?.id || null, category_slug: cat,
+      source: docFile ? 'document' : 'online', documents,
       answers: Object.fromEntries(questions.map((q) => [q.section + ' | ' + q.text, answers[q.id] ?? null])), check_result }
     const { data, error } = await supabase.rpc('ks_submit_application', { p: payload })
     setSending(false)
@@ -114,7 +121,7 @@ export default function Check() {
             {point ? (
               <div className="panel" style={{ borderInlineStart: `6px solid ${land(zone?.landscape).c500}` }}>
                 <div className="caption">המיקום שנבחר</div>
-                <h3>{address || 'נקודה על המפה'}</h3>
+                <label className="field">כתובת (אפשר לתקן)<input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={locating ? 'מאתר כתובת...' : 'רחוב ומספר'} /></label>
                 <p className="muted" style={{ marginTop: 8 }}>{zone ? <><b>{zone.name}</b>. {zone.note}</> : 'המיקום מחוץ לאזורים הממופים. הבדיקה תושלם ידנית.'}</p>
                 {nearby.length > 0 && <p className="caption">מבנה לשימור בקרבת מקום: {nearby.map((b) => b.name).slice(0, 3).join(', ')}</p>}
                 <div className="row" style={{ marginTop: 'var(--space-3)' }}>
@@ -124,7 +131,11 @@ export default function Check() {
             ) : <p className="muted">אפשר גם ללחוץ ישירות על המפה.</p>}
           </div>
           <CityMap zones={d.zones} selectedZoneId={zone?.id} marker={point} fitTo={point} height={520}
-            onMapClick={(p) => { setPoint(p); setAddress('') }} />
+            onMapClick={async (p) => {
+              setPoint(p); setAddress(''); setLocating(true)
+              try { setAddress(await reverseGeocode(p)) } catch { /* אפשר להקליד ידנית */ }
+              setLocating(false)
+            }} />
         </div>
       )}
 
@@ -221,15 +232,29 @@ export default function Check() {
           ) : (
             <form className="panel" onSubmit={submit} style={{ display: 'grid', gap: 'var(--space-4)' }}>
               {!d.schemaReady && <SchemaNotice />}
-              <label className="field">שם המבקש<input required value={form.applicant_name} onChange={(e) => setForm({ ...form, applicant_name: e.target.value })} /></label>
-              <label className="field">שם העסק או הפרויקט<input value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></label>
+              <DocImport categories={d.categories} onFill={(f, file) => {
+                const keys = ['applicant_name', 'business_name', 'phone', 'email', 'sign_area_sqm', 'notes']
+                const next = { ...form }; const mark = {}
+                for (const k of keys) if (f[k]) { next[k] = k === 'sign_area_sqm' ? String(f[k]).replace(/[^\d.]/g, '') : f[k]; mark[k] = true }
+                if (f.permit) { next.notes = [next.notes, `מספר היתר: ${f.permit}`].filter(Boolean).join('\n'); mark.notes = true }
+                setForm(next); setDocFile(file)
+                if (f.address) { setAddress(f.address); mark.address = true }
+                setFilled(mark); setTimeout(() => setFilled({}), 1700)
+                toast(Object.keys(mark).length ? `מולאו ${Object.keys(mark).length} שדות. בדקו ושמרו.` : 'לא נמצאו שדות למילוי')
+                if (f.category_slug && f.category_slug !== cat) toast('במסמך מופיע סוג שלט אחר. אפשר לשנות בשלב 2.')
+              }} />
+              <label className="field">שם המבקש<input className={filled.applicant_name ? 'just-filled' : ''} required value={form.applicant_name} onChange={(e) => setForm({ ...form, applicant_name: e.target.value })} /></label>
+              <label className="field">שם העסק או הפרויקט<input className={filled.business_name ? 'just-filled' : ''} value={form.business_name} onChange={(e) => setForm({ ...form, business_name: e.target.value })} /></label>
+              <label className="field">כתובת השלט<input className={filled.address ? 'just-filled' : ''} value={address} onChange={(e) => setAddress(e.target.value)} /></label>
               <div className="grid-2">
-                <label className="field">טלפון<input inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
-                <label className="field">דוא"ל<input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
+                <label className="field">טלפון נייד<input className={filled.phone ? 'just-filled' : ''} inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
+                <label className="field">דוא"ל<input className={filled.email ? 'just-filled' : ''} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
               </div>
-              <label className="field">שטח השלט (מ"ר)<input inputMode="decimal" value={form.sign_area_sqm} onChange={(e) => setForm({ ...form, sign_area_sqm: e.target.value.replace(/[^\d.]/g, '') })} /></label>
+              <label className="field">שטח השלט (מ"ר)<input className={filled.sign_area_sqm ? 'just-filled' : ''} inputMode="decimal" value={form.sign_area_sqm} onChange={(e) => setForm({ ...form, sign_area_sqm: e.target.value.replace(/[^\d.]/g, '') })} /></label>
+              <label className="field">תיאור והערות<textarea className={filled.notes ? 'just-filled' : ''} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
+              {docFile && <p className="caption">המסמך "{docFile.name}" יישמר עם הבקשה.</p>}
               {sendError && <div className="notice notice-warn">{sendError}</div>}
-              <div className="row"><button className="btn btn-primary" disabled={sending || !form.applicant_name.trim()}>{sending ? 'שולחת...' : 'שליחת הבקשה'}</button></div>
+              <div className="row"><button className="btn btn-primary" disabled={sending || !form.applicant_name.trim()}>{sending ? 'שומרת...' : 'שמירה ושליחת הבקשה'}</button></div>
               <p className="caption">הבקשה הרשמית מוגשת בפורטל העירייה. כאן נשמר תיק מוכן ומלא לצוות.</p>
             </form>
           )}

@@ -28,7 +28,9 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 async function setup(page, { staff = false, schema = false, isStaff = staff } = {}) {
   page.on('pageerror', (e) => errors.push(`${page.url()} :: ${e.message}`))
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource|net::|ERR_|tiles|style|AJAXError|openfreemap|unpkg|fonts/i.test(m.text())) errors.push(`${page.url()} :: console ${m.text()}`) })
-  await page.route('https://nominatim.openstreetmap.org/**', (r) => json(r, [{ display_name: 'שבי ציון 12, רובע א, אשדוד, ישראל', lat: '31.808', lon: '34.645' }]))
+  await page.route('https://nominatim.openstreetmap.org/**', (r) => r.request().url().includes('/reverse')
+    ? json(r, { display_name: 'הרצל 5, רובע א, אשדוד', address: { road: 'הרצל', house_number: '5', suburb: "רובע א'" } })
+    : json(r, [{ display_name: 'שבי ציון 12, רובע א, אשדוד, ישראל', lat: '31.808', lon: '34.645' }]))
   await page.route('https://tiles.openfreemap.org/**', (r) => r.abort())
   await page.route('https://unpkg.com/**', (r) => r.abort())
   await page.route(`${SB}/**`, async (route) => {
@@ -47,6 +49,11 @@ async function setup(page, { staff = false, schema = false, isStaff = staff } = 
     if (p === '/rest/v1/rpc/is_staff') return json(route, isStaff)
     if (p === '/rest/v1/rpc/ks_submit_application') return json(route, 'KS-ABC123')
     if (p === '/rest/v1/rpc/ks_track_application') return json(route, [{ ...app, category: 'שלט בית עסק', last_decision: null, updated_at: app.created_at }])
+    if (p === '/rest/v1/rpc/ks_track_by_phone') return json(route, [
+      { tracking_code: 'KS-TEST01', category: 'שלט בית עסק', business_name: 'קפה הים', address: 'שבי ציון 12', status: 'התקבלה', created_at: app.created_at },
+      { tracking_code: 'KS-TEST02', category: 'שלט אלקטרוני', business_name: 'מרכז הים', address: 'הרצל 5', status: 'אושרה', created_at: app.created_at }])
+    if (p === '/rest/v1/rpc/ks_save_site_request') return json(route, { code: 'KS-SITE01', token: 't' })
+    if (p.startsWith('/storage/v1/object/')) return json(route, { Key: p.replace('/storage/v1/object/', ''), Id: 'f1' })
     const table = p.replace('/rest/v1/', '')
     if (table === 'quarters') return json(route, quarters)
     if (table === 'shimur_routes') return json(route, routes)
@@ -80,6 +87,9 @@ const step = async (name, fn) => {
   try { await fn(); console.log('ok  ', name) } catch (e) { errors.push(`${name} :: ${e.message.split('\n').slice(0,3).join(' | ')}`); console.log('FAIL', name, e.message.split('\n')[0]); if (currentPage) await currentPage.screenshot({ path: `${OUT}/FAIL-${name.replace(/\W+/g,'_')}.png`, fullPage: true }).catch(()=>{}) }
 }
 
+import { execSync } from 'node:child_process'
+execSync(`node tests/make-fixtures.mjs ${OUT}/fixtures`)
+const FIX = `${OUT}/fixtures`
 const browser = await chromium.launch()
 for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {
   const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, locale: 'he-IL' })
@@ -127,11 +137,17 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.screenshot({ path: `${OUT}/${vp.name}-check-result.png`, fullPage: true })
     await noHScroll('check result')
     await page.getByRole('button', { name: 'המשך להגשה' }).click()
+    await page.getByLabel('טעינת מסמך בקשה').setInputFiles(`${FIX}/form.docx`)
+    await page.locator('.docimp-status.ready').waitFor({ timeout: 30000 })
+    await page.getByRole('button', { name: 'מלא', exact: true }).click()
+    if (await page.getByLabel('טלפון נייד').inputValue() !== '050-1234567') throw new Error('"מלא" לא מילא את הטלפון מהמסמך')
+    if (await page.getByLabel('כתובת השלט').inputValue() !== 'שבי ציון 12, אשדוד') throw new Error('"מלא" לא מילא את הכתובת')
     await page.getByLabel('שם המבקש').fill('דנה לוי')
     await page.getByLabel('שטח השלט (מ"ר)').fill('3.5')
     await Promise.all([page.waitForResponse((r) => r.url().includes('rpc/ks_submit_application')), page.getByRole('button', { name: 'שליחת הבקשה' }).click()])
     await page.getByText('KS-ABC123').first().waitFor()
     if (!requests.some((r) => r.includes('rpc/ks_submit_application'))) throw new Error('לא נשלחה בקשת הגשה')
+    if (!requests.some((r) => r.startsWith('POST /storage/v1/object/ks-docs/incoming/'))) throw new Error('המסמך לא נשמר עם הבקשה')
     await page.getByRole('link', { name: 'מעקב אחר הבקשה' }).click()
     await page.getByText('KS-TEST01').first().waitFor()
   })
@@ -215,6 +231,11 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await page.getByLabel('כתובת (לא חובה)').fill('שבי ציון 12')
     await page.getByRole('button', { name: 'איתור' }).click()
     await page.locator('.pin-status', { hasText: 'המיקום נדקר במפה' }).waitFor()
+    await page.getByRole('button', { name: 'המיקום שלי' }).waitFor()
+    await ctx.grantPermissions(['geolocation']); await ctx.setGeolocation({ latitude: 31.8005, longitude: 34.6505 })
+    await page.getByLabel('כתובת (לא חובה)').fill('')
+    await page.getByRole('button', { name: 'המיקום שלי' }).click()
+    await page.waitForFunction(() => document.querySelector('input[placeholder="מתמלאת לבד אחרי דקירה"]')?.value.includes('הרצל 5'))
     await page.getByLabel('מה ראיתם').fill('שלט מתפרק מעל המדרכה')
     if (await page.locator('.pguide li.is-done').count() < 2) throw new Error('ההסבר בדף לא מסמן את הצעדים שנעשו')
     await page.getByRole('button', { name: 'שליחת הדיווח' }).click()
@@ -224,9 +245,13 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
 
   await step(`${vp.name} track + staff login`, async () => {
     await nav('מעקב בקשה')
-    await page.getByLabel('קוד מעקב').fill('ks-test01')
+    await page.getByLabel('קוד מעקב או טלפון נייד').fill('ks-test01')
     await page.getByRole('button', { name: 'בדיקה' }).click()
     await page.getByText('KS-TEST01').first().waitFor()
+    await page.getByLabel('קוד מעקב או טלפון נייד').fill('050-1234567')
+    await page.getByRole('button', { name: 'בדיקה' }).click()
+    await page.getByRole('listitem').filter({ hasText: 'KS-TEST02' }).click()
+    if (!requests.some((r) => r.includes('rpc/ks_track_by_phone'))) throw new Error('לא בוצע חיפוש לפי טלפון')
     await nav('צוות העירייה')
     await page.getByLabel('דוא"ל').fill('shtanat5@gmail.com')
     await page.getByRole('button', { name: 'שליחת קישור כניסה' }).click()
@@ -257,6 +282,16 @@ for (const vp of [{ name: 'desktop', width: 1366, height: 900 }, { name: 'mobile
     await Promise.all([page.waitForResponse((r) => r.url().includes('/ks_applications') && r.request().method() === 'PATCH'), page.getByLabel('תוקף רישיון').fill('2027-12-31')])
     if (!requests.some((r) => r.startsWith('PATCH /rest/v1/ks_applications'))) throw new Error('לא עודכנה בקשה')
     await page.screenshot({ path: `${OUT}/staff-apps.png`, fullPage: true })
+    await page.locator('.steps').getByRole('tab', { name: 'קליטה ידנית' }).click()
+    await page.getByLabel('טעינת מסמך בקשה').setInputFiles(`${FIX}/form.png`)
+    await page.locator('.docimp-status.ready').waitFor({ timeout: 60000 })
+    await page.getByRole('button', { name: 'מלא', exact: true }).click()
+    if (await page.getByLabel('שם המבקש').inputValue() !== 'דנה לוי') throw new Error('זיהוי התמונה לא מילא את שם המבקש')
+    if (await page.getByLabel('דוא"ל').inputValue() !== 'dana@example.com') throw new Error('זיהוי התמונה לא מילא את הדוא"ל')
+    const before = requests.filter((r) => r.includes('rpc/ks_submit_application')).length
+    await Promise.all([page.waitForResponse((r) => r.url().includes('rpc/ks_submit_application')), page.getByRole('button', { name: 'שמירת הבקשה' }).click()])
+    if (requests.filter((r) => r.includes('rpc/ks_submit_application')).length <= before) throw new Error('הקליטה הידנית לא נשמרה')
+    await page.locator('.rules', { hasText: 'KS-ABC123' }).waitFor()
     for (const t of ['דיווחים', 'סקר שילוט קיים', 'תעריפים', 'תוקף והגדרות']) {
       await page.locator('.steps').getByRole('tab', { name: t }).click()
       await page.waitForTimeout(150)

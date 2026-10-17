@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useData, rulesFor } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
+import { supabase } from '../lib/supabase'
+import { uploadDoc } from '../lib/uploadDoc'
 import PageGuide from '../components/PageGuide'
 import { Section, Tag, Loading } from '../components/bits'
 import { rateFor, computeFee, UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
@@ -24,7 +26,7 @@ const CHECKLIST = [
 const STORE = 'ktav-construction-v1'
 const readStore = () => { try { return JSON.parse(localStorage.getItem(STORE) || '{}') } catch { return {} } }
 const writeStore = (v) => { try { localStorage.setItem(STORE, JSON.stringify(v)); return true } catch { return false } }
-const EMPTY_SIGN = { project: '', permit: '', developer: '', architect: '', contractor: '', engineer: '', manager: '', supervisor: '', company: '', render: '' }
+const EMPTY_SIGN = { project: '', permit: '', developer: '', architect: '', contractor: '', engineer: '', manager: '', supervisor: '', company: '', render: '', phone: '' }
 
 // הקטנת ההדמיה בדפדפן לפני השמירה, כדי שתיכנס לבקשה
 function shrinkImage(file, max = 1400) {
@@ -82,21 +84,43 @@ export default function Construction() {
     try { setS('render')(await shrinkImage(file)); toast('ההדמיה נטענה לשלט') }
     catch { toast('אפשר לטעון רק קובץ תמונה (JPG, PNG)') }
   }
-  const save = () => {
+  const [server, setServer] = useState(null) // { code, token }
+  const [saving, setSaving] = useState(false)
+  const save = async () => {
     if (!name) { toast('יש לכתוב שם פרויקט על השלט לפני השמירה'); return }
+    setSaving(true)
     const at = new Date().toISOString()
-    const next = { ...readStore(), [name]: { sign, entrances, hasFence, fence: hasFence ? fence : null, done, savedAt: at } }
-    if (!writeStore(next)) { toast(sign.render ? 'אין מקום בדפדפן לשמירת ההדמיה. נסו תמונה קטנה יותר.' : 'הדפדפן חוסם שמירה. אפשר להדפיס את הדף.'); return }
-    setSaved(next); setSavedAt(at); toast(`הבקשה "${name}" נשמרה`)
+    const prev = readStore()[name] || {}
+    // שמירה בשרת: ההדמיה עולה כקובץ לדלי הפרטי, הבקשה נשמרת עם קוד מעקב ואסימון עריכה
+    let srv = server || prev.server || null
+    let documents = prev.documents || []
+    try {
+      if (sign.render && sign.render !== prev.sign?.render) {
+        const blob = await (await fetch(sign.render)).blob()
+        const up = await uploadDoc(new File([blob], `${name}-render.jpg`, { type: 'image/jpeg' }))
+        if (up?.path) documents = [up]
+      }
+      const { render, ...signData } = sign
+      const { data, error } = await supabase.rpc('ks_save_site_request', { p: {
+        tracking_code: srv?.code || '', edit_token: srv?.token || '', project_name: name, developer: sign.developer, phone: sign.phone,
+        address: hasFence ? fence.location : '', documents,
+        details: { sign: signData, entrances, has_fence: hasFence, fence: hasFence ? fence : null, documents_ready: done, has_render: !!render },
+      } })
+      if (!error && data?.code) srv = data
+    } catch { /* נשמר מקומית, ננסה שוב בשמירה הבאה */ }
+    const next = { ...readStore(), [name]: { sign, entrances, hasFence, fence: hasFence ? fence : null, done, savedAt: at, server: srv, documents } }
+    if (!writeStore(next)) { delete next[name].sign.render; writeStore(next) }
+    setSaved(readStore()); setSavedAt(at); setServer(srv); setSaving(false)
+    toast(srv ? `הבקשה "${name}" נשמרה. קוד מעקב ${srv.code}` : `הבקשה "${name}" נשמרה בדפדפן. השרת לא זמין כרגע.`)
   }
   const load = (k) => {
     const r = readStore()[k]; if (!r) return
     setSign({ ...EMPTY_SIGN, ...r.sign }); setEntrances(r.entrances || '1'); setHasFence(!!r.hasFence)
-    setFence({ ...EMPTY_FENCE, ...(r.fence || {}) }); setDone(r.done || {}); setSavedAt(r.savedAt)
+    setFence({ ...EMPTY_FENCE, ...(r.fence || {}) }); setDone(r.done || {}); setSavedAt(r.savedAt); setServer(r.server || null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   const remove = (k) => { const r = readStore(); delete r[k]; writeStore(r); setSaved(r); if (k === name) setSavedAt(null) }
-  const startNew = () => { setSign(EMPTY_SIGN); setEntrances('1'); setHasFence(false); setFence(EMPTY_FENCE); setDone({}); setSavedAt(null) }
+  const startNew = () => { setSign(EMPTY_SIGN); setEntrances('1'); setHasFence(false); setFence(EMPTY_FENCE); setDone({}); setSavedAt(null); setServer(null) }
   if (d.loading) return <Loading />
   const savedList = Object.entries(saved).sort((a, b) => (b[1].savedAt > a[1].savedAt ? 1 : -1))
 
@@ -135,6 +159,7 @@ export default function Construction() {
         <div className="ps-side">
           <span className="eyebrow">שלט האתר · 2x4 מ'</span>
           <p className="muted">מדבקה על פנל קשיח, בכל כניסה לאתר, במפלס הקרקע. לוחצים על כל שורה בשלט וכותבים.</p>
+          <label className="field">טלפון נייד של היזם<input inputMode="tel" dir="ltr" value={sign.phone} onChange={(e) => setS('phone')(e.target.value)} placeholder="050-0000000" /></label>
           <label className="field">מספר כניסות לאתר<input inputMode="numeric" value={entrances} onChange={(e) => { setEntrances(e.target.value.replace(/\D/g, '')); setSavedAt(null) }} /></label>
           <p className="caption">שלטי אתר נדרשים: {ent}, אחד בכל כניסה. קובץ הפורמט הרשמי מתקבל מאדריכלות העיר.</p>
         </div>
@@ -182,11 +207,11 @@ export default function Construction() {
         <div>
           <strong>{name ? `הבקשה: ${name}` : 'הבקשה עדיין ללא שם'}</strong>
           <span className="caption">{savedAt ? `נשמרה ${new Date(savedAt).toLocaleString('he-IL')}` : 'לא נשמרה'} · שלט אתר{hasFence ? ' וגדר מדברת' : ''} · מסמכים {doneCount}/{CHECKLIST.length}</span>
-          <span className="caption save-note">השמירה כרגע בדפדפן הזה. שמירה בשרת תופעל עם הקמת טבלאות המערכת.</span>
+          <span className="caption save-note">{server ? `שמורה בשרת העירייה. קוד מעקב: ${server.code}. אפשר לעקוב גם לפי הטלפון.` : 'השמירה נשמרת בשרת העירייה ובדפדפן הזה.'}</span>
         </div>
         <div className="row">
           <button className="btn" onClick={startNew}>בקשה חדשה</button>
-          <button className="btn btn-primary" onClick={save}>שמירת הבקשה</button>
+          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? 'שומרת...' : 'שמירת הבקשה'}</button>
         </div>
       </section>
       {savedList.length > 0 && (

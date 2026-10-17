@@ -13,9 +13,23 @@ export default function Track() {
   const [row, setRow] = useState(null)
   const [msg, setMsg] = useState('')
   useStrip('מעקב בקשה', row ? `${row.tracking_code}: ${row.status}` : 'הזינו את קוד המעקב שקיבלתם בעת ההגשה.', 'var(--sea-500)')
+  const [list, setList] = useState(null)
+  const isPhone = (v) => /^[\d\s\-+()]{9,}$/.test(v.trim()) && v.replace(/\D/g, '').length >= 9
   const look = async (c = code) => {
     setMsg(''); setRow(null)
     if (!c.trim()) return
+    if (isPhone(c)) {
+      setList(null)
+      const { data, error } = await supabase.rpc('ks_track_by_phone', { p_phone: c })
+      if (error) { setMsg('החיפוש לפי טלפון אינו זמין כרגע.'); return }
+      if (!data?.length) { setMsg('לא נמצאו בקשות עם מספר הטלפון הזה.'); return }
+      if (data.length === 1) return open(data[0].tracking_code)
+      setList(data); return
+    }
+    return open(c)
+  }
+  const open = async (c) => {
+    setMsg('')
     const { data, error } = await supabase.rpc('ks_track_application', { p_code: c })
     if (error) { setMsg('המעקב יופעל לאחר הקמת מסד הנתונים.'); return }
     if (!data?.length) { setMsg('לא נמצאה בקשה עם הקוד הזה.'); return }
@@ -28,12 +42,24 @@ export default function Track() {
         <span className="eyebrow">מבקש · מעקב</span>
         <h1>איפה הבקשה שלי?</h1>
       </div>
-      <PageGuide steps={[['מקלידים את קוד המעקב שקיבלתם בהגשה (KS-...)', !!code.trim()], ['לוחצים "בדיקה"', !!row || !!msg], ['רואים את הסטטוס ואת ההחלטה האחרונה', !!row]]} />
+      <PageGuide steps={[['מקלידים קוד מעקב (KS-...) או את הטלפון הנייד שמסרתם', !!code.trim()], ['לוחצים "בדיקה". לפי טלפון מופיעות כל הבקשות, ובוחרים אחת', !!row || !!list || !!msg], ['רואים את הסטטוס ואת ההחלטה האחרונה', !!row]]} />
       <form className="row" onSubmit={(e) => { e.preventDefault(); setParams({ code }); look() }} style={{ maxWidth: 520 }}>
-        <label className="field" style={{ flex: '1 1 220px' }}>קוד מעקב<input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KS-XXXXXX" dir="ltr" /></label>
+        <label className="field" style={{ flex: '1 1 220px' }}>קוד מעקב או טלפון נייד<input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="KS-XXXXXX  או  050-0000000" dir="ltr" /></label>
         <button className="btn btn-primary" disabled={!code.trim()}>בדיקה</button>
       </form>
       {msg && <p className="muted" style={{ marginTop: 'var(--space-4)' }}>{msg}</p>}
+      {list && (
+        <div className="track-list" role="list" aria-label="הבקשות שנמצאו">
+          <p className="caption">נמצאו {list.length} בקשות עם המספר הזה. בחרו בקשה:</p>
+          {list.map((r) => (
+            <button key={r.tracking_code} role="listitem" className={`choice track-item ${row?.tracking_code === r.tracking_code ? 'selected' : ''}`} onClick={() => { setParams({ code: r.tracking_code }); open(r.tracking_code) }}>
+              <span className="row" style={{ justifyContent: 'space-between' }}><span className="mono">{r.tracking_code}</span><Tag status={statusTag(r.status)}>{r.status}</Tag></span>
+              <strong style={{ fontWeight: 500 }}>{r.business_name || r.category}</strong>
+              <small>{r.category}{r.address ? ` · ${r.address}` : ''} · {new Date(r.created_at).toLocaleDateString('he-IL')}</small>
+            </button>
+          ))}
+        </div>
+      )}
       {row && (
         <div className="panel sail lift" style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 'var(--space-3)', maxWidth: 720 }}>
           <div className="row" style={{ justifyContent: 'space-between' }}><span className="mono">{row.tracking_code}</span><Tag status={statusTag(row.status)}>{row.status}</Tag></div>

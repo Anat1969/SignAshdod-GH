@@ -660,3 +660,26 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 .pguide-steps li.is-done .pguide-n { background: var(--nahal-ink); border-color: var(--nahal-ink); color: #fff; }
 .pguide-steps li.is-done .pguide-n::before { content: "✓" / ""; font-family: var(--sans); font-weight: 700; font-size: 13px; }
 .pguide-note { margin: 0; }
+
+/* ===== טעינת מסמך בקשה ===== */
+.docimp { border: 1.5px dashed color-mix(in srgb, var(--line) 90%, var(--ink-muted)); padding: var(--space-4) var(--space-5); background: linear-gradient(160deg, var(--surface-raised), var(--sand)); display: grid; gap: var(--space-3); transition: border-color .2s, background .2s; }
+.docimp.is-over { border-color: var(--sea-ink); background: color-mix(in srgb, var(--sea-500) 10%, var(--surface-raised)); }
+.docimp-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
+.docimp-head p { margin: 4px 0 0; }
+.docimp-body { display: grid; gap: var(--space-3); animation: rise .4s var(--ease) both; }
+.docimp-file { display: flex; gap: var(--space-3); align-items: baseline; }
+.docimp-status { margin: 0; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.docimp-status.error { color: var(--port-ink); }
+.docimp-status.ready { color: var(--nahal-ink); }
+.docimp-status.ready::before { content: "✓" / ""; font-weight: 700; }
+.docimp-found { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-2); margin: 0; }
+.docimp-found div { background: var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); padding: 8px 10px; }
+.docimp-found dt { font-size: 12px; color: var(--ink-muted); }
+.docimp-found dd { margin: 2px 0 0; font-weight: 500; word-break: break-word; }
+.docimp-text pre { white-space: pre-wrap; max-height: 220px; overflow: auto; font-size: 12px; background: var(--surface-raised); padding: var(--space-3); border: 1px solid var(--line); }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--sea-ink); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.just-filled { animation: filled 1.6s var(--ease); }
+@keyframes filled { 0% { background: color-mix(in srgb, var(--nahal-500) 30%, var(--surface-raised)); } 100% { background: var(--surface-raised); } }
+.track-list { display: grid; gap: var(--space-3); margin-top: var(--space-5); max-width: 720px; }
+.track-item { animation: rise .45s var(--ease) both; }

@@ -62,3 +62,24 @@ export async function geocode(query) {
   writeCache(cache)
   return out
 }
+
+// מכתובת לנקודה ההפוכה: אחרי דקירה במפה, הכתובת נכנסת לשדה (ואפשר לשנות אותה).
+export async function reverseGeocode([lng, lat]) {
+  const key = `rev:${lat.toFixed(5)},${lng.toFixed(5)}`
+  const cache = readCache()
+  if (cache[key]) return cache[key]
+  const wait = Math.max(0, 1100 - (Date.now() - lastCall))
+  if (wait) await new Promise((r) => setTimeout(r, wait))
+  lastCall = Date.now()
+  const params = new URLSearchParams({ lat: String(lat), lon: String(lng), format: 'jsonv2', 'accept-language': 'he', zoom: '18', addressdetails: '1' })
+  const res = await fetch(`https://nominatim.openstreetmap.org/reverse?${params}`, { headers: { Accept: 'application/json' } })
+  if (!res.ok) throw new Error('שירות הכתובות אינו זמין כרגע')
+  const j = await res.json()
+  const a = j.address || {}
+  const street = [a.road || a.pedestrian || a.footway || a.square, a.house_number].filter(Boolean).join(' ')
+  const place = a.suburb || a.neighbourhood || a.quarter || ''
+  const label = street ? `${street}${place ? ', ' + place : ''}, אשדוד` : (j.display_name || '').split(',').slice(0, 3).join(',')
+  cache[key] = label
+  writeCache(cache)
+  return label
+}
