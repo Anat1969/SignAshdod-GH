@@ -1,8 +1,10 @@
 import { Link, useParams } from 'react-router-dom'
 import { useData, rulesFor, categoryBySlug } from '../lib/data'
 import { useStrip } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Section, Tag, Loading } from '../components/bits'
 import { land } from '../lib/landscapes'
+import SignDiagram from '../components/SignDiagram'
 
 const GENERAL = [
   ['1.1.2', 'בשלט אין פגיעה בתקנת הציבור וברגשותיו.'],
@@ -23,9 +25,11 @@ export function GuideIndex() {
         <h1>מה הכלל, ומאיפה הוא בא</h1>
         <p className="lead">מטרות המדיניות: לשמור על צביון העיר, למנוע זיהום חזותי, לקבוע כללים שווים לכולם ולהבטיח שהשלט אינו מפגע בטיחותי.</p>
       </div>
+      <PageGuide steps={[['בוחרים סוג שלט מהכרטיסים', false], ['קוראים את החזית, התנאים והמידות', false], ['עוברים לבדיקת התאמה לכתובת שלכם', false]]} />
       <div className="choice-grid">
         {d.categories.map((c) => (
           <Link key={c.slug} to={`/guide/${c.slug}`} className="entry" style={{ '--entry-color': land(c.landscape).c500, minHeight: 180 }}>
+            <SignDiagram slug={c.slug} landscape={c.landscape} compact title={c.name} />
             <span className="num">סעיף {c.section}</span>
             <h3>{c.name}</h3>
             <p>{c.summary}</p>
@@ -59,10 +63,12 @@ export function GuideCategory() {
         <p className="lead">{c.summary}</p>
         <p className="muted">תוקף רישיון: {c.default_validity_months ? `${c.default_validity_months} חודשים (ברירת מחדל לסוג שלט זה, ניתן לעריכה).` : `${d.settings.license_policy?.label}. אין חידוש שנתי.`}</p>
       </div>
+      <PageGuide steps={[['בחרתם סוג שלט', true], ['קוראים את החזית: מעבר על מספר במקרא מדגיש אותו בשרטוט', false], ['בודקים את התנאים והדרישות', false], ['עוברים לבדיקת התאמה לסוג הזה', false]]} />
+      <SignDiagram slug={c.slug} landscape={c.landscape} title={c.name} />
       <div className="grid-2">
         <div>
           <h3 style={{ marginBottom: 'var(--space-3)' }}>תנאים שנבדקים</h3>
-          <ul className="rules">{conditions.map((r) => <li key={r.id}><Section s={r.section} /><span>{r.text}</span><Tag status={r.kind === 'zone' ? 'neutral' : r.on_fail === 'review' ? 'review' : 'fail'}>{r.kind === 'zone' ? 'לפי המפה' : r.on_fail === 'review' ? 'נבדק בוועדה' : 'חובה'}</Tag></li>)}</ul>
+          <ul className="rules">{conditions.map((r) => <li key={r.id}><Section s={r.section} /><span>{r.text}</span><Tag status={r.kind === 'zone' ? 'neutral' : r.on_fail === 'review' ? 'review' : 'must'}>{r.kind === 'zone' ? 'לפי המפה' : r.on_fail === 'review' ? 'נבדק בוועדה' : 'חובה'}</Tag></li>)}</ul>
         </div>
         <div>
           <h3 style={{ marginBottom: 'var(--space-3)' }}>דרישות, מידות ומסמכים</h3>

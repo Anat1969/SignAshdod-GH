@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase, isMissingTable } from './supabase'
 import * as seed from '../seed/policy'
 
@@ -19,13 +19,15 @@ function seedRules() {
 function zonesFromQuarters(quarters) {
   const out = quarters.map((q) => {
     const z = { ...seed.defaultQuarterZone, ...(seed.quarterZones[q.id] || {}) }
+    const ring = q.polygon || []
+    const centroid = ring.length ? [ring.reduce((t, c) => t + c[0], 0) / ring.length, ring.reduce((t, c) => t + c[1], 0) / ring.length] : null
     return {
-      id: `zq-${q.id}`, name: q.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
+      id: `zq-${q.id}`, kind: 'quarter', center: Array.isArray(q.center) && q.center.length === 2 ? q.center : centroid, name: q.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
       coast: !!z.coast, view_protected: false, priority: 1, schematic: true, note: z.note, polygon: q.polygon, source: `quarters:${q.id}`,
     }
   })
   for (const z of seed.overlayZones) {
-    out.push({ id: z.id, name: z.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
+    out.push({ id: z.id, kind: 'overlay', name: z.name, landscape: z.landscape, electronic_allowed: !!z.electronic, totem_allowed: !!z.totem,
       coast: !!z.coast, view_protected: !!z.view, priority: z.priority, schematic: true, note: z.note, polygon: z.polygon, source: 'schematic' })
   }
   return out
@@ -42,7 +44,7 @@ export function DataProvider({ children }) {
   const [isStaff, setIsStaff] = useState(false)
 
   const load = useCallback(async () => {
-    const [cats, rules, zones, notes, fees, settings, quarters, routes, sites, buildings] = await Promise.all([
+    const settled = await Promise.allSettled([
       supabase.from('ks_categories').select('*').order('sort'),
       supabase.from('ks_rules').select('*').eq('active', true).order('sort'),
       supabase.from('ks_zones').select('*'),
@@ -54,6 +56,7 @@ export function DataProvider({ children }) {
       supabase.from('shimur_route_sites').select('route_id,building_id,position,narrative_text').order('position'),
       supabase.from('shimur_buildings').select('id,name,address,neighborhood,lat,lng,protection_level,style,year_built,current_use,coords_approx'),
     ])
+    const [cats, rules, zones, notes, fees, settings, quarters, routes, sites, buildings] = settled.map((r) => (r.status === 'fulfilled' ? r.value : { data: null, error: r.reason || new Error('network') }))
     const schemaReady = !cats.error && (cats.data || []).length > 0
     const quartersData = quarters.data || []
     const categories = schemaReady ? cats.data : seed.categories.map((c) => ({ ...c, default_validity_months: c.default_validity_months ?? null }))
@@ -78,11 +81,26 @@ export function DataProvider({ children }) {
       settings: settingsMap,
       routes: routeList,
       buildings: buildings.data || [],
-      loadError: quarters.error && routes.error ? 'לא ניתן להתחבר כרגע לשרת הנתונים. מוצגים נתוני הבסיס.' : null,
+      loadError: quarters.error || routes.error || sites.error || buildings.error ? 'חלק מהנתונים לא נטען. מנסים שוב אוטומטית.' : null,
     })
   }, [])
 
+  // בלי צורך לרענן: אם השרת לא ענה בטעינה הראשונה, מנסים שוב לבד, וגם כשחוזרים ללשונית או כשהרשת חוזרת.
+  const tries = useRef(0)
+  const failed = !!state.loadError
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    if (!failed) { tries.current = 0; return }
+    if (tries.current >= 4) return
+    const t = setTimeout(() => { tries.current += 1; load() }, [1500, 4000, 10000, 30000][tries.current])
+    return () => clearTimeout(t)
+  }, [failed, state, load])
+  useEffect(() => {
+    const again = () => { if (document.visibilityState === 'visible' && failed) { tries.current = 0; load() } }
+    window.addEventListener('online', again)
+    document.addEventListener('visibilitychange', again)
+    return () => { window.removeEventListener('online', again); document.removeEventListener('visibilitychange', again) }
+  }, [failed, load])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))

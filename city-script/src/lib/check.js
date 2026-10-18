@@ -6,6 +6,8 @@ export const RESULT = {
   fail: { label: 'לא תואם', cls: 'tag-fail' },
   info: { label: 'דרישה', cls: 'tag-info' },
   open: { label: 'טרם נענה', cls: 'tag-neutral' },
+  must: { label: 'חובה', cls: 'tag-must' },
+  step: { label: 'שלב', cls: 'tag-step' },
 }
 
 // מבנים לשימור בטווח של 40 מ' מהנקודה (shimur_buildings).

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useData } from '../lib/data'
 import { useStrip } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Loading } from '../components/bits'
 import { rateFor, computeFee, UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 
@@ -21,6 +22,7 @@ export default function Fees() {
         <h1>מחשבון אגרת שילוט</h1>
         <p className="lead">התעריף נקבע בחוק העזר ומתעדכן על ידי צוות העירייה. כל תעריף מוצג עם מקורו ותאריך תחילתו.</p>
       </div>
+      <PageGuide steps={[['בוחרים סוג שלט', !!cat], ['מזינים את שטח השלט במ"ר', !!area], ['קוראים את האגרה המשוערת ואת מקור התעריף', !!area && !!rate]]} />
       <div className="grid-2">
         <div className="panel" style={{ display: 'grid', gap: 'var(--space-4)' }}>
           <label className="field">סוג השלט<select value={cat} onChange={(e) => setCat(e.target.value)}>{d.categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label>

@@ -2,15 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import CityMap from '../components/CityMap'
 import { supabase } from '../lib/supabase'
+import { signInFromPastedLink } from '../lib/authRescue'
+import DocImport from '../components/DocImport'
+import { uploadDoc } from '../lib/uploadDoc'
 import { useData } from '../lib/data'
 import { useStrip, useToast } from '../components/Shell'
+import PageGuide from '../components/PageGuide'
 import { Tag, Section, Loading, SchemaNotice } from '../components/bits'
 import { UNIT_LABEL, SOURCE_LABEL } from '../lib/check'
 
 const STATUSES = ['התקבלה', 'בבדיקת אדריכלית העיר', 'בוועדת שילוט', 'בפיקוח', 'אושרה', 'הוחזרה לתיקון', 'נדחתה']
 const STAGES = ['אדריכלית העיר', 'ועדת שילוט', 'פיקוח']
 const DECISIONS = ['אושר', 'הוחזר לתיקון', 'נדחה', 'הערה']
-const TABS = [['apps', 'בקשות'], ['reports', 'דיווחים'], ['survey', 'סקר שילוט קיים'], ['fees', 'תעריפים'], ['settings', 'תוקף והגדרות']]
+const TABS = [['apps', 'בקשות'], ['intake', 'קליטה ידנית'], ['reports', 'דיווחים'], ['survey', 'סקר שילוט קיים'], ['fees', 'תעריפים'], ['settings', 'תוקף והגדרות']]
 const statusTag = (s) => s === 'אושרה' ? 'pass' : s === 'נדחתה' ? 'fail' : s === 'הוחזרה לתיקון' ? 'review' : 'neutral'
 
 function Login() {
@@ -18,6 +22,15 @@ function Login() {
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
+  const [pasted, setPasted] = useState('')
+  const [rescueErr, setRescueErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const rescue = async (e) => {
+    e.preventDefault(); setRescueErr(''); setBusy(true)
+    const r = await signInFromPastedLink(pasted)
+    setBusy(false)
+    if (r.error) setRescueErr(r.error)
+  }
   const send = async (e) => {
     e.preventDefault(); setErr('')
     const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: window.location.origin + '/staff' } })
@@ -33,6 +46,7 @@ function Login() {
     <div className="page" style={{ maxWidth: 560 }}>
       <div className="page-head"><span className="eyebrow">צוות העירייה</span><h1>כניסת צוות</h1>
         <p className="lead">אדריכלות העיר, ועדת השילוט והפיקוח. הכניסה בקישור או בקוד שנשלח לדוא"ל.</p></div>
+      <PageGuide steps={[['מזינים דוא"ל של צוות ושולחים', sent], ['לוחצים על הקישור במייל, או מדביקים אותו בשדה למטה', false], ['נכנסים ללוח הצוות: בקשות, דיווחים ותעריפים', false]]} />
       <form className="panel" onSubmit={sent ? verify : send} style={{ display: 'grid', gap: 'var(--space-4)' }}>
         <label className="field">דוא"ל<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" disabled={sent} /></label>
         {sent && <><p className="muted">נשלח מייל. לחצו על הקישור שבו, או הזינו כאן את הקוד אם הופיע במייל.</p>
@@ -42,6 +56,13 @@ function Login() {
           <button className="btn btn-primary" disabled={sent ? !code.trim() : !email.trim()}>{sent ? 'כניסה עם קוד' : 'שליחת קישור כניסה'}</button>
           {sent && <button type="button" className="btn btn-quiet" onClick={() => { setSent(false); setCode('') }}>דוא"ל אחר</button>}
         </div>
+      </form>
+      <form className="panel rescue" onSubmit={rescue}>
+        <span className="eyebrow">הקישור מהמייל פתח דף שגיאה או localhost?</span>
+        <p className="muted">העתיקו את הקישור מהכפתור במייל (לחיצה ימנית, "העתקת כתובת הקישור"), או את הכתובת המלאה של הדף שנפתח, והדביקו כאן.</p>
+        <label className="field">הקישור מהמייל או הכתובת שנפתחה<input value={pasted} onChange={(e) => setPasted(e.target.value)} dir="ltr" placeholder="https://...  או  http://localhost:3000/#access_token=..." /></label>
+        {rescueErr && <div className="notice notice-warn">{rescueErr}</div>}
+        <div className="row"><button className="btn" disabled={!pasted.trim() || busy}>{busy ? 'נכנסים...' : 'כניסה עם הקישור'}</button></div>
       </form>
     </div>
   )
@@ -74,6 +95,11 @@ function Applications({ d }) {
     setSel(data); setRows((rs) => rs.map((x) => (x.id === data.id ? data : x))); toast('נשמר')
     const h = await supabase.from('ks_license_history').select('*').eq('application_id', sel.id).order('changed_at')
     setHistory(h.data || [])
+  }
+  const openDoc = async (path) => {
+    const { data, error } = await supabase.storage.from('ks-docs').createSignedUrl(path, 300)
+    if (error) { toast('לא ניתן לפתוח את המסמך'); return }
+    window.open(data.signedUrl, '_blank', 'noopener')
   }
   const addReview = async (e) => {
     e.preventDefault()
@@ -109,6 +135,13 @@ function Applications({ d }) {
             <div className="row" style={{ justifyContent: 'space-between' }}><span className="mono">{sel.tracking_code}</span><Tag status={statusTag(sel.status)}>{sel.status}</Tag></div>
             <h3>{sel.business_name || sel.applicant_name}</h3>
             <p className="caption">{catName(sel.category_slug)} · {sel.address || 'ללא כתובת'} · {sel.applicant_name} · {sel.phone || ''} {sel.email || ''}{sel.sign_area_sqm ? ` · ${sel.sign_area_sqm} מ"ר` : ''}</p>
+            {(sel.notes || sel.source !== 'online' || sel.documents?.length > 0) && (
+              <div className="panel-sand" style={{ padding: 'var(--space-3)', display: 'grid', gap: 6 }}>
+                <span className="caption">מקור: {({ online: 'הגשה באתר', manual: 'קליטה ידנית', document: 'נקלט ממסמך', site: 'בקשת שלט אתר' })[sel.source] || sel.source}</span>
+                {sel.notes && <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sel.notes}</p>}
+                {(sel.documents || []).filter((x) => x?.path).map((x) => <button key={x.path} className="btn btn-sm" onClick={() => openDoc(x.path)}>פתיחת המסמך: {x.name}</button>)}
+              </div>
+            )}
             <div className="grid-2">
               <label className="field">סטטוס<select value={sel.status} onChange={(e) => update({ status: e.target.value })}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</select></label>
               <label className="field">תוקף רישיון
@@ -137,6 +170,63 @@ function Applications({ d }) {
               <ul className="rules">{history.map((h) => <li key={h.id}><span className="section-ref">{h.field === 'status' ? 'סטטוס' : 'תוקף'}</span><span>{h.old_value} ← {h.new_value}<br /><span className="caption">{h.changed_by} · {new Date(h.changed_at).toLocaleString('he-IL')}</span></span><span /></li>)}</ul></div>}
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+const EMPTY_INTAKE = { category_slug: 'business', applicant_name: '', business_name: '', address: '', phone: '', email: '', sign_area_sqm: '', notes: '' }
+function Intake({ d, onSaved }) {
+  const toast = useToast()
+  const [f, setF] = useState(EMPTY_INTAKE)
+  const [file, setFile] = useState(null)
+  const [filled, setFilled] = useState({})
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState([])
+  const set = (k) => (e) => setF({ ...f, [k]: k === 'sign_area_sqm' ? e.target.value.replace(/[^\d.]/g, '') : e.target.value })
+  const cls = (k) => (filled[k] ? 'just-filled' : '')
+  const fill = (found, doc) => {
+    const next = { ...f }; const mark = {}
+    for (const k of Object.keys(EMPTY_INTAKE)) if (found[k]) { next[k] = k === 'sign_area_sqm' ? String(found[k]).replace(/[^\d.]/g, '') : found[k]; mark[k] = true }
+    if (found.permit) { next.notes = [next.notes, `מספר היתר: ${found.permit}`].filter(Boolean).join('\n'); mark.notes = true }
+    setF(next); setFile(doc); setFilled(mark); setTimeout(() => setFilled({}), 1700)
+    toast(Object.keys(mark).length ? `מולאו ${Object.keys(mark).length} שדות. בדקו ושמרו.` : 'לא נמצאו שדות למילוי')
+  }
+  const save = async (e) => {
+    e.preventDefault(); setBusy(true)
+    const documents = file ? [await uploadDoc(file)].filter(Boolean) : []
+    const { data, error } = await supabase.rpc('ks_submit_application', { p: { ...f, source: file ? 'document' : 'manual', documents } })
+    setBusy(false)
+    if (error) { toast('השמירה נכשלה: ' + error.message); return }
+    setDone((x) => [{ code: data, name: f.business_name || f.applicant_name }, ...x])
+    toast(`נשמר. קוד מעקב ${data}`)
+    setF(EMPTY_INTAKE); setFile(null); onSaved?.()
+  }
+  return (
+    <div className="split">
+      <form className="panel" onSubmit={save} style={{ display: 'grid', gap: 'var(--space-4)' }}>
+        <h3>קליטת בקשה שהגיעה ידנית</h3>
+        <DocImport categories={d.categories} onFill={fill} title="טענו את טופס הבקשה, לחצו מלא, בדקו ושמרו" />
+        <label className="field">סוג השלט<select className={cls('category_slug')} value={f.category_slug} onChange={set('category_slug')}>{d.categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label>
+        <div className="grid-2">
+          <label className="field">שם המבקש<input className={cls('applicant_name')} required value={f.applicant_name} onChange={set('applicant_name')} /></label>
+          <label className="field">שם העסק או הפרויקט<input className={cls('business_name')} value={f.business_name} onChange={set('business_name')} /></label>
+        </div>
+        <label className="field">כתובת השלט<input className={cls('address')} value={f.address} onChange={set('address')} /></label>
+        <div className="grid-2">
+          <label className="field">טלפון נייד<input className={cls('phone')} inputMode="tel" value={f.phone} onChange={set('phone')} /></label>
+          <label className="field">דוא"ל<input className={cls('email')} type="email" value={f.email} onChange={set('email')} /></label>
+        </div>
+        <label className="field">שטח השלט (מ"ר)<input className={cls('sign_area_sqm')} inputMode="decimal" value={f.sign_area_sqm} onChange={set('sign_area_sqm')} /></label>
+        <label className="field">תיאור והערות<textarea className={cls('notes')} value={f.notes} onChange={set('notes')} /></label>
+        {file && <p className="caption">המסמך "{file.name}" יישמר עם הבקשה.</p>}
+        <div className="row"><button className="btn btn-primary" disabled={busy || !f.applicant_name.trim()}>{busy ? 'שומרת...' : 'שמירת הבקשה'}</button>
+          <button type="button" className="btn btn-quiet" onClick={() => { setF(EMPTY_INTAKE); setFile(null) }}>ניקוי</button></div>
+      </form>
+      <div className="sticky panel panel-sand" style={{ display: 'grid', gap: 'var(--space-3)', alignContent: 'start' }}>
+        <span className="eyebrow">נקלטו עכשיו</span>
+        {!done.length ? <p className="muted">בקשות שנשמרות כאן מופיעות ברשימה, ומיד גם בלשונית הבקשות עם קוד מעקב.</p>
+          : <ul className="rules">{done.map((x) => <li key={x.code}><span className="section-ref">{x.code}</span><span>{x.name}</span><Tag status="pass">נשמר</Tag></li>)}</ul>}
       </div>
     </div>
   )
@@ -282,6 +372,7 @@ export default function Staff() {
       {!d.schemaReady ? <SchemaNotice /> : (
         <>
           {tab === 'apps' && <Applications d={d} />}
+          {tab === 'intake' && <Intake d={d} />}
           {tab === 'reports' && <Reports d={d} />}
           {tab === 'survey' && <Survey d={d} />}
           {tab === 'fees' && <FeesAdmin d={d} />}

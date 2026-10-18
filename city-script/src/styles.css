@@ -1,7 +1,7 @@
 /* כתב העיר — שפת העיצוב נגזרת ממערכת העיצוב "עיריית אשדוד":
    קרקע שקטה (paper, ink, line), עיר אפורה, ושלט אחד בצבע. */
 :root {
-  --paper: #FAF8F4; --surface-raised: #FFFFFF; --sand: #F1ECE3; --line: #C9C0B2;
+  --paper: #F4F5F6; --surface-raised: #FFFFFF; --sand: #E9EBED; --line: #C5CAD0;
   --ink: #13222C; --ink-muted: #55636C; --on-action: #FFFFFF;
   --sea-100: #DEEDF0; --sea-300: #A0D4E8; --sea-500: #31A7D9; --sea-700: #216B8C; --sea-900: #133546;
   --dune-100: #F9EED6; --dune-300: #F7D895; --dune-500: #F3B220; --dune-700: #7A601E; --dune-900: #3E381D;
@@ -10,8 +10,8 @@
   --port-100: #F7E1D8; --port-300: #F2AF99; --port-500: #E8552A; --port-700: #A64226; --port-900: #3C231F;
   --sea-ink: #216B8C; --dune-ink: #7A601E; --nahal-ink: #4A6D2C; --estuary-ink: #376D5A; --port-ink: #A64226;
   --focus: #216B8C;
-  --sans: "Rubik", "Assistant", system-ui, sans-serif;
-  --serif: "Frank Ruhl Libre", "David Libre", Georgia, serif;
+  --sans: "IBM Plex Sans Hebrew", "Assistant", system-ui, sans-serif;
+  --serif: "IBM Plex Sans Hebrew", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px; --space-9: 96px;
   --radius-sm: 2px; --radius-sail: 48px;
@@ -247,4 +247,447 @@ tr.clickable:hover td { background: var(--sand); }
   .topnav, .strip, .footer, .no-print { display: none !important; }
   body { background: #fff; color: #000; }
   .page { padding: 0; }
+}
+
+/* חזיתות סכמטיות לסוגי השלטים */
+.sd { display: block; width: 100%; height: auto;
+  --sd-sky1: #E8EEF2; --sd-sky2: var(--paper); --sd-w1: #F7F8F9; --sd-w2: #E1E4E7; --sd-side: #C9CED3; --sd-roof: #D7DBDF;
+  --sd-edge: #9AA1A8; --sd-glass: #C3D3DA; --sd-ground: #D5D9DD; --sd-door: #6E7B83; }
+@media (prefers-color-scheme: dark) {
+  .sd { --sd-sky1: #10212B; --sd-w1: #2A3B47; --sd-w2: #1F2F3A; --sd-side: #17252F; --sd-roof: #22333F;
+    --sd-edge: #4C6272; --sd-glass: #3B5566; --sd-ground: #1A2A35; --sd-door: #8FA1AC; }
+}
+.sd .sd-edge { stroke: var(--sd-edge); stroke-width: 1; }
+.sd .sd-side { fill: var(--sd-side); stroke: var(--sd-edge); stroke-width: 1; }
+.sd .sd-roof { fill: var(--sd-roof); stroke: var(--sd-edge); stroke-width: 1; }
+.sd .sd-shadow { fill: #000; opacity: .10; }
+.sd .sd-glass { fill: var(--sd-glass); }
+.sd .sd-door { fill: var(--sd-door); }
+.sd .sd-canopy { fill: var(--sd-edge); }
+.sd .sd-groundline { stroke: var(--sd-edge); stroke-width: 1.2; }
+.sd .sd-strip { fill: none; stroke: var(--sd-edge); stroke-dasharray: 4 3; }
+.sd .sd-mullion { stroke: var(--sd-glass); stroke-width: 2; }
+.sd .sd-dim line { stroke: var(--ink-muted); stroke-width: 1; }
+.sd .sd-dim text, .sd .sd-caption { font-family: var(--sans); font-size: 12px; fill: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.sd .sd-lead { stroke: var(--ink-muted); stroke-dasharray: 2 3; stroke-width: 1; }
+.sd .sd-mark circle { fill: var(--ink); }
+.sd .sd-mark text { fill: var(--paper); font-family: var(--mono); font-size: 11px; font-weight: 600; }
+.sd .sd-letters { font-family: var(--sans); font-size: 17px; font-weight: 600; }
+.sd .sd-muted-letters { fill: var(--sd-door); }
+.sd .sd-small-letters { font-family: var(--sans); font-size: 11px; font-weight: 600; }
+.sd .sd-plate-num { font-family: var(--sans); font-size: 13px; font-weight: 600; fill: #fff; }
+.sd .sd-plate-st { font-family: var(--sans); font-size: 7px; fill: #fff; }
+.sd .sd-awning { fill: var(--sd-roof); stroke: var(--sd-edge); }
+.sd .sd-awning-stripe { stroke: var(--sd-w1); stroke-width: 4; opacity: .7; }
+.sd .sd-forbidden { font-family: var(--sans); font-size: 12px; fill: var(--port-700); }
+.sd .sd-strike { stroke: var(--port-700); stroke-width: 1.5; }
+.sd .sd-banner-text { font-family: var(--sans); font-size: 16px; font-weight: 600; fill: #fff; }
+.sd .sd-faded { opacity: .55; }
+.sd .sd-lane { stroke: var(--sd-edge); stroke-width: 2; stroke-dasharray: 14 10; }
+.sd .sd-screen-frame { fill: none; stroke: var(--ink); stroke-width: 2; }
+.sd .sd-frame line { stroke: var(--sd-edge); stroke-width: 1.5; }
+.sd .sd-fence-text { font-family: var(--sans); font-size: 14px; font-weight: 500; fill: #13222C; }
+.sd .sd-site-sign { fill: #fff; stroke: var(--sd-edge); }
+.sd .sd-render { fill: #E4E8EA; }
+.sd-compact .sd-mark, .sd-compact .sd-dim text, .sd-compact .sd-caption { display: none; }
+.sd-thumb { margin: calc(var(--space-5) * -1) calc(var(--space-5) * -1) 0; border-bottom: 1px solid var(--line); background: var(--sand); }
+.sd-figure { margin: 0 0 var(--space-6); display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.sd-canvas { background: var(--surface-raised); border: 1px solid var(--line); box-shadow: 0 18px 40px -24px rgba(19, 34, 44, .45), 0 2px 0 0 var(--sd-accent) inset; }
+.sd-legend { list-style: none; margin: var(--space-3) 0; padding: 0; display: grid; gap: var(--space-3); }
+.sd-legend li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-3); align-items: start; }
+.sd-legend-n { width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 12px; display: grid; place-items: center; margin-top: 2px; }
+@media (max-width: 860px) { .sd-figure { grid-template-columns: minmax(0, 1fr); } }
+.sd .sd-in { animation: sd-in .45s ease-out both; }
+.sd .sd-drop { animation-name: sd-drop; }
+@keyframes sd-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sd-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sd .sd-in { animation: none; } }
+
+/* ===================================================================
+   שכבת עיצוב: עיר אפורה, שלט אחד בצבע. עומק, אור, שכבות ותנועה.
+   =================================================================== */
+:root {
+  --shadow-1: 0 1px 1px rgba(19,34,44,.04), 0 2px 4px rgba(19,34,44,.04);
+  --shadow-2: 0 1px 2px rgba(19,34,44,.05), 0 6px 14px -6px rgba(19,34,44,.12), 0 22px 44px -28px rgba(19,34,44,.30);
+  --shadow-3: 0 2px 4px rgba(19,34,44,.06), 0 14px 28px -10px rgba(19,34,44,.18), 0 40px 70px -40px rgba(19,34,44,.45);
+  --grid-line: rgba(19,34,44,.045);
+  --sheen: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,0) 42%);
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shadow-1: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-2: 0 1px 2px rgba(0,0,0,.35), 0 8px 18px -8px rgba(0,0,0,.5), 0 24px 48px -28px rgba(0,0,0,.7);
+    --shadow-3: 0 2px 4px rgba(0,0,0,.4), 0 16px 32px -12px rgba(0,0,0,.55), 0 44px 80px -40px rgba(0,0,0,.85);
+    --grid-line: rgba(238,242,244,.04);
+    --sheen: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 42%);
+  }
+}
+
+/* רקע: אור מלמעלה, ורשת אדריכלית עדינה מאחורי הכול */
+body {
+  background:
+    radial-gradient(1200px 520px at 85% -10%, color-mix(in srgb, var(--sea-100) 55%, transparent), transparent 70%),
+    radial-gradient(900px 480px at 0% 30%, color-mix(in srgb, var(--sand) 80%, transparent), transparent 70%),
+    var(--paper);
+  background-attachment: fixed;
+  font-weight: 400;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.4) 60%, transparent 100%);
+}
+@media (prefers-color-scheme: dark) {
+  body { background:
+    radial-gradient(1200px 520px at 85% -10%, rgba(49,167,217,.10), transparent 70%),
+    var(--paper); background-attachment: fixed; }
+}
+
+/* טיפוגרפיה: דקה וגדולה בכותרות, מונוספייס בתוויות */
+h1 { font-weight: 200; font-size: clamp(40px, 6.4vw, 80px); line-height: 1.02; letter-spacing: -0.025em; }
+h2 { font-weight: 300; font-size: clamp(28px, 4.4vw, 48px); line-height: 1.1; letter-spacing: -0.015em; }
+h3 { font-weight: 400; }
+.lead { font-weight: 300; font-size: clamp(19px, 2vw, 23px); line-height: 1.55; }
+.essay { font-weight: 300; font-size: 19px; line-height: 32px; }
+.eyebrow { text-transform: none; letter-spacing: 0; display: inline-flex; align-items: center; gap: 10px; }
+.eyebrow::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: .6; }
+.figure { font-family: var(--sans); font-weight: 200; font-size: clamp(48px, 7vw, 76px); letter-spacing: -0.03em; }
+.brand-name { font-weight: 500; letter-spacing: -0.01em; }
+
+/* סרגל עליון: זכוכית עם קו אור */
+.topnav {
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  backdrop-filter: saturate(1.4) blur(16px); -webkit-backdrop-filter: saturate(1.4) blur(16px);
+  border-bottom-color: transparent;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--line) 70%, transparent), 0 10px 30px -22px rgba(19,34,44,.35);
+}
+.nav-links a { position: relative; transition: color .2s, background .2s; }
+.nav-links a.active { box-shadow: none; }
+.nav-links a.active::after {
+  content: ""; position: absolute; inset-inline: 10px; bottom: 0; height: 2px; background: var(--port-500);
+  border-radius: 2px; box-shadow: 0 0 10px color-mix(in srgb, var(--port-500) 60%, transparent);
+}
+
+/* רצועת השילוט: צבע האזור נמס לתוך המשטח */
+.strip {
+  background: linear-gradient(270deg, color-mix(in srgb, var(--strip-color) 12%, var(--surface-raised)) 0%, var(--surface-raised) 38%);
+  border-bottom-color: transparent; box-shadow: var(--shadow-1);
+}
+.strip::before { width: 4px; box-shadow: 0 0 18px var(--strip-color); }
+.strip-text { font-weight: 400; }
+
+/* כפתורים: עומק עדין והרמה במעבר */
+.btn { border-radius: 3px; box-shadow: var(--shadow-1); transition: transform .25s var(--ease), box-shadow .25s var(--ease), background .2s, border-color .2s; }
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
+.btn:active { transform: translateY(0); box-shadow: var(--shadow-1); }
+.btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--sea-ink) 82%, #fff) 0%, var(--sea-ink) 55%, color-mix(in srgb, var(--sea-ink) 85%, #000) 100%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, 0 8px 18px -8px color-mix(in srgb, var(--sea-ink) 70%, transparent);
+}
+.btn-quiet { box-shadow: none; }
+.btn-quiet:hover { box-shadow: none; transform: none; }
+input, select, textarea { box-shadow: inset 0 1px 2px rgba(19,34,44,.06); transition: box-shadow .2s, border-color .2s; }
+input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 18%, transparent); }
+
+/* משטחים: שכבות, ברק עליון וצל רב־שלבי */
+.panel, .entry, .choice, .table-wrap, .map-wrap, .sd-canvas { border-color: color-mix(in srgb, var(--line) 75%, transparent); }
+.panel { background: var(--sheen), var(--surface-raised); box-shadow: var(--shadow-2); }
+.panel-sand { background: linear-gradient(160deg, var(--sand), color-mix(in srgb, var(--sand) 60%, var(--paper))); box-shadow: var(--shadow-1); }
+.lift { box-shadow: var(--shadow-2); }
+.map-wrap { box-shadow: var(--shadow-3); }
+.table-wrap { box-shadow: var(--shadow-2); }
+
+.entry {
+  background: var(--sheen), var(--surface-raised); box-shadow: var(--shadow-2);
+  transition: transform .45s var(--ease), box-shadow .45s var(--ease);
+  transform: perspective(900px) translateZ(0);
+}
+.entry:hover { transform: perspective(900px) translateY(-6px) rotateX(2deg); box-shadow: var(--shadow-3); }
+.entry::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .45s var(--ease);
+  background: radial-gradient(420px 180px at 100% 0%, color-mix(in srgb, var(--entry-color, var(--port-500)) 14%, transparent), transparent 70%);
+}
+.entry:hover::before { opacity: 1; }
+.entry h3 { font-weight: 400; font-size: 26px; }
+.entry .go { display: inline-flex; gap: 8px; align-items: center; }
+.entry .go::after { content: ""; width: 18px; height: 1px; background: currentColor; transition: width .35s var(--ease); }
+.entry:hover .go::after { width: 36px; }
+
+.choice { background: var(--sheen), var(--surface-raised); box-shadow: var(--shadow-1); transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .2s; }
+.choice:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+
+/* כניסה מדורגת לרשתות */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.choice-grid > * { animation: rise .6s var(--ease) both; }
+.choice-grid > *:nth-child(2) { animation-delay: .06s; } .choice-grid > *:nth-child(3) { animation-delay: .12s; }
+.choice-grid > *:nth-child(4) { animation-delay: .18s; } .choice-grid > *:nth-child(5) { animation-delay: .24s; }
+.choice-grid > *:nth-child(6) { animation-delay: .30s; } .choice-grid > *:nth-child(7) { animation-delay: .36s; }
+.choice-grid > *:nth-child(n+8) { animation-delay: .42s; }
+.rules li { transition: background .2s; }
+.rules li:hover { background: linear-gradient(270deg, color-mix(in srgb, var(--sand) 70%, transparent), transparent); }
+
+/* שלבי האשף: קו התקדמות מואר */
+.steps button.current { border-bottom-color: var(--port-500); box-shadow: 0 8px 14px -12px var(--port-500); }
+
+/* חזיתות השלטים: מסגרת עמוקה */
+.sd-canvas { box-shadow: var(--shadow-3), 0 2px 0 0 var(--sd-accent) inset; border-radius: 2px; overflow: hidden; }
+.sd-thumb { background: linear-gradient(180deg, var(--sand), var(--paper)); }
+
+/* קו הרחוב בדף הבית: שלוש שכבות עומק */
+.skyline { position: relative; height: clamp(150px, 20vw, 240px); margin: var(--space-7) calc(var(--space-5) * -1) 0; overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+.sk-layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sk-far rect { fill: color-mix(in srgb, var(--line) 45%, var(--paper)); }
+.sk-mid .sk-body { fill: color-mix(in srgb, var(--line) 80%, var(--paper)); }
+.sk-win-mid { fill: color-mix(in srgb, var(--paper) 55%, transparent); }
+.sk-near-top { stop-color: #C3C8CD; } .sk-near-bottom { stop-color: #A3AAB1; }
+.sk-win { fill: rgba(255,255,255,.28); }
+.sk-shop { fill: rgba(19,34,44,.18); }
+.sk-strip { fill: rgba(255,255,255,.12); }
+.sk-sign-face { fill: var(--port-500); }
+.sk-sign-glow { fill: var(--port-500); opacity: .75; }
+.sk-sign { animation: sign-on 2.4s var(--ease) .9s both; }
+@keyframes sign-on { 0% { opacity: 0; } 30% { opacity: .9; } 38% { opacity: .2; } 52% { opacity: 1; } 100% { opacity: 1; } }
+.sk-far { animation: rise 1s var(--ease) both; } .sk-mid { animation: rise 1s var(--ease) .12s both; } .sk-near { animation: rise 1s var(--ease) .24s both; }
+.sk-ground { position: absolute; inset-inline: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--ink-muted), transparent); opacity: .5; }
+@media (prefers-color-scheme: dark) {
+  .sk-near-top { stop-color: #2E4250; } .sk-near-bottom { stop-color: #22333F; }
+  .sk-win { fill: rgba(160,212,232,.14); }
+}
+.over-skyline { position: relative; margin-top: -6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .choice-grid > *, .sk-far, .sk-mid, .sk-near, .sk-sign { animation: none; }
+  .entry, .entry:hover, .btn:hover, .choice:hover { transform: none; }
+}
+
+.rise { animation: rise .7s var(--ease) both; }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+.eyebrow, .strip-label, .section-ref, .entry .num { letter-spacing: 0; }
+
+/* ===== תפריט מערכת: כפתור אחד לכל פעולות המערכת ===== */
+.sysmenu { position: relative; }
+.sysmenu-btn { gap: 8px; padding-inline: 14px; }
+.sysmenu.open .sysmenu-btn { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.sysmenu-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--port-500); box-shadow: 0 0 8px var(--port-500); }
+.sysmenu-panel {
+  position: absolute; inset-inline-end: 0; top: calc(100% + 10px); width: 270px; z-index: 60;
+  background: var(--sheen), var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  box-shadow: var(--shadow-3); padding: 6px; display: grid; gap: 2px;
+  opacity: 0; transform: translateY(-6px) scale(.98); transform-origin: top left; pointer-events: none; visibility: hidden;
+  transition: opacity .2s var(--ease), transform .25s var(--ease), visibility 0s .25s;
+}
+.sysmenu.open .sysmenu-panel { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .2s var(--ease), transform .25s var(--ease); }
+.sysmenu-panel > a, .sysmenu-panel > button {
+  appearance: none; border: 0; background: none; font: inherit; color: var(--ink); text-decoration: none; text-align: start; cursor: pointer;
+  display: grid; gap: 2px; padding: 10px 12px; font-size: 15px; border-radius: 2px; transition: background .2s;
+}
+.sysmenu-panel > a:hover, .sysmenu-panel > button:hover, .sysmenu-panel > a:focus-visible, .sysmenu-panel > button:focus-visible { background: var(--sand); }
+.sysmenu-panel small { font-size: 12px; color: var(--ink-muted); }
+.sysmenu-panel .sysmenu-primary { color: var(--sea-ink); font-weight: 500; }
+.sysmenu-note { font-size: 12px; color: var(--ink-muted); padding: 8px 12px; border-top: 1px solid var(--line); margin-top: 4px; }
+@media (max-width: 1180px) {
+  .sysmenu { width: 100%; }
+  .sysmenu-panel { position: static; width: 100%; box-shadow: none; display: none; margin-top: 6px; }
+  .sysmenu.open .sysmenu-panel { display: grid; }
+}
+
+/* ===== שלט האתר: כותבים על השלט עצמו ===== */
+.ps-stage { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: var(--space-6); align-items: start; perspective: 1400px; }
+@media (max-width: 980px) { .ps-stage { grid-template-columns: minmax(0, 1fr); } }
+.ps-side { display: grid; gap: var(--space-3); }
+.project-sign.ps-editable { font-size: clamp(9px, 1.15vw, 15px); box-shadow: var(--shadow-3); transform: rotateY(-4deg) rotateX(1deg); transition: transform .6s var(--ease); border-radius: 2px; }
+.project-sign.ps-editable:hover, .project-sign.ps-editable:focus-within { transform: none; }
+.ps-ink { all: unset; box-sizing: border-box; display: block; width: 100%; min-width: 0; font: inherit; color: inherit; cursor: text;
+  border-bottom: 1px dashed transparent; transition: border-color .2s, background .2s; }
+.ps-ink::placeholder { color: inherit; opacity: .55; }
+.ps-ink:hover { border-bottom-color: currentColor; }
+.ps-ink:focus { border-bottom-color: currentColor; background: rgba(255,255,255,.12); outline: none; }
+.ps-ink.ps-title { font-size: 3.2em; font-weight: 600; line-height: 1.1; }
+.ps-ink-permit { display: inline-block; width: 9em; }
+.project-sign .ps-rows div { align-items: baseline; }
+.project-sign .ps-rows div > span { flex: 0 0 auto; }
+.project-sign .ps-rows .ps-ink { text-align: start; padding-inline-start: 10px; }
+.project-sign .ps-foot .ps-ink { color: #55636C; }
+.project-sign .ps-foot .ps-ink:focus { background: rgba(31,138,153,.08); }
+
+/* ===== גדר מדברת ===== */
+.fence-block { display: grid; gap: var(--space-5); }
+.fence-head { display: flex; justify-content: space-between; gap: var(--space-5); align-items: start; flex-wrap: wrap; }
+.fence-head > div { max-width: 62ch; display: grid; gap: var(--space-2); }
+.switch { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 16px; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch-track { width: 46px; height: 26px; border-radius: 13px; background: var(--line); position: relative; box-shadow: inset 0 1px 3px rgba(0,0,0,.15); transition: background .25s var(--ease); flex: 0 0 auto; }
+.switch-track::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-2); transition: inset-inline-start .25s var(--ease); }
+.switch input:checked + .switch-track { background: var(--dune-500); }
+.switch input:checked + .switch-track::after { inset-inline-start: 23px; }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.fence-sheet { display: grid; gap: var(--space-4); }
+.fence-bar-lg { height: 48px; box-shadow: var(--shadow-2); }
+.fence-bar-lg > div { font-size: 14px; }
+.fence-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); font-weight: 400; }
+@media (max-width: 640px) { .fence-inputs { grid-template-columns: minmax(0, 1fr); } }
+.fence-table td { vertical-align: middle; }
+.fence-table tr.total td { font-weight: 500; background: var(--sand); }
+.cell-input { border: 1px solid transparent; background: transparent; box-shadow: none; padding: 6px 8px; }
+.cell-input:hover { border-color: var(--line); }
+.cell-input:focus { background: var(--surface-raised); }
+
+.save-bar {
+  position: sticky; bottom: 12px; z-index: 20; margin-top: var(--space-7);
+  display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+  padding: var(--space-4) var(--space-5); background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow: var(--shadow-3);
+}
+.save-bar > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.saved-list { margin-top: var(--space-5); display: grid; gap: var(--space-3); }
+.saved-list .rules li { grid-template-columns: 110px minmax(0, 1fr) auto; align-items: center; }
+@media (max-width: 640px) { .saved-list .rules li { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== מסלולים על המפה ===== */
+.route-key { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: #fff; font-size: 11px; margin-inline-end: 8px; box-shadow: var(--shadow-1); }
+.route-entry.is-hover { transform: perspective(900px) translateX(-6px); box-shadow: var(--shadow-3); }
+.route-entry.is-hover::after { transform: scaleX(1); }
+@media (max-width: 640px) {
+  .save-bar { padding: var(--space-3); gap: var(--space-2); bottom: 8px; }
+  .save-bar .save-note { display: none; }
+  .save-bar .row { width: 100%; } .save-bar .row .btn { flex: 1 1 0; }
+  .fence-table th, .fence-table td { padding: 8px 6px; }
+}
+
+/* ===== חזיתות השלטים: זרקור, הבלטה ותנועה ===== */
+.sd { --sd-veil: var(--paper); }
+.sd .sd-veil { animation: sd-in 1s var(--ease) .55s both; pointer-events: none; }
+.sd .sd-sign { transform-box: fill-box; transform-origin: center; }
+.sd:not(.sd-compact) .sd-sign { animation: sd-drop .55s var(--ease) both, sd-glow 2.6s ease-in-out 1.4s infinite alternate; }
+@keyframes sd-glow {
+  from { filter: drop-shadow(0 0 0 transparent); }
+  to { filter: drop-shadow(0 0 7px color-mix(in srgb, var(--sd-accent) 75%, transparent)) drop-shadow(0 2px 2px rgba(19,34,44,.18)); }
+}
+.sd .sd-dim line { stroke-dasharray: 240; stroke-dashoffset: 240; animation: sd-draw .9s var(--ease) .7s forwards; }
+.sd .sd-dim text { animation: sd-in .5s var(--ease) 1.3s both; }
+@keyframes sd-draw { to { stroke-dashoffset: 0; } }
+.sd .sd-pop { transform-box: fill-box; transform-origin: center; animation: sd-pop .45s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes sd-pop { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: scale(1); } }
+.sd .sd-mark { cursor: help; transition: opacity .25s; }
+.sd .sd-mark circle { transition: fill .25s, r .25s; }
+.sd[data-hl] .sd-mark { opacity: .35; }
+.sd[data-hl="1"] .sd-mark[data-n="1"], .sd[data-hl="2"] .sd-mark[data-n="2"], .sd[data-hl="3"] .sd-mark[data-n="3"],
+.sd[data-hl="4"] .sd-mark[data-n="4"], .sd[data-hl="5"] .sd-mark[data-n="5"] { opacity: 1; }
+.sd[data-hl="1"] .sd-mark[data-n="1"] circle, .sd[data-hl="2"] .sd-mark[data-n="2"] circle, .sd[data-hl="3"] .sd-mark[data-n="3"] circle,
+.sd[data-hl="4"] .sd-mark[data-n="4"] circle, .sd[data-hl="5"] .sd-mark[data-n="5"] circle { fill: var(--sd-accent); r: 12px; }
+.sd-legend li { padding: 6px 8px; margin: -6px -8px; border-radius: 2px; transition: background .25s, transform .25s var(--ease); cursor: default; }
+.sd-legend li.is-hl { background: color-mix(in srgb, var(--sd-accent) 12%, transparent); transform: translateX(-4px); }
+.sd-legend li.is-hl .sd-legend-n { background: var(--sd-accent); }
+.sd-legend li { animation: rise .5s var(--ease) both; }
+.sd-legend li:nth-child(2) { animation-delay: .08s; } .sd-legend li:nth-child(3) { animation-delay: .16s; }
+.sd-legend li:nth-child(4) { animation-delay: .24s; } .sd-legend li:nth-child(5) { animation-delay: .32s; }
+/* כרטיסי ההנחיות: השלט נדלק במעבר העכבר */
+.sd-thumb { overflow: hidden; }
+.sd-thumb .sd { transition: transform .7s var(--ease); }
+.entry:hover .sd-thumb .sd { transform: scale(1.06); }
+.sd-compact .sd-sign { transition: filter .45s var(--ease); }
+.entry:hover .sd-compact .sd-sign { filter: drop-shadow(0 0 8px var(--sd-accent)) drop-shadow(0 0 2px var(--sd-accent)); }
+@media (prefers-reduced-motion: reduce) {
+  .sd .sd-sign, .sd .sd-dim line, .sd .sd-dim text, .sd .sd-pop, .sd .sd-veil, .sd-legend li { animation: none; stroke-dashoffset: 0; }
+}
+
+/* הדמיית ההיתר על שלט האתר */
+.project-sign .ps-render { position: relative; }
+.project-sign .ps-render-box { position: relative; cursor: pointer; overflow: hidden; transition: box-shadow .25s, background .25s; }
+.project-sign .ps-render-box input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.project-sign .ps-render-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: sd-in .6s var(--ease) both; }
+.project-sign .ps-render-box:hover, .project-sign .ps-render-box.is-over { box-shadow: inset 0 0 0 2px #1F8A99; }
+.project-sign .ps-render-box.is-over { background: rgba(31,138,153,.12); }
+.project-sign .ps-render-box:focus-within { box-shadow: inset 0 0 0 2px var(--focus); }
+.ps-render-hint { display: grid; gap: 4px; text-align: center; pointer-events: none; }
+.ps-render-hint b { font-weight: 500; }
+.ps-render-hint small { font-size: .85em; opacity: .75; }
+.ps-render-clear { position: absolute; top: 6px; inset-inline-end: 6px; appearance: none; border: 0; font: inherit; font-size: 11px; padding: 4px 8px; background: rgba(19,34,44,.72); color: #fff; cursor: pointer; opacity: 0; transition: opacity .2s; }
+.project-sign:hover .ps-render-clear, .ps-render-clear:focus-visible { opacity: 1; }
+.rescue { display: grid; gap: var(--space-3); margin-top: var(--space-5); background: linear-gradient(160deg, var(--sand), var(--surface-raised)); }
+
+/* ===== סימנים על תגיות וכפתורים: וי, איקס, סימן שאלה, חובה. הסימן לא נקרא בקול (alt ריק) ===== */
+.tag::before { width: auto; height: auto; background: none; font-weight: 700; font-size: 13px; line-height: 1; display: inline-grid; place-items: center; min-width: 14px; }
+.tag-pass::before { content: "✓" / ""; }
+.tag-fail::before { content: "✗" / ""; }
+.tag-review::before { content: "?" / ""; }
+.tag-must { color: var(--port-ink); }
+.tag-must::before { content: "!" / ""; }
+.tag-info::before { content: "•" / ""; font-size: 16px; }
+.tag-neutral::before { content: "◦" / ""; font-size: 15px; }
+.tag-step { color: var(--sea-ink); }
+.tag-step::before { content: "○" / ""; font-size: 11px; }
+.tag-pass, .tag-fail, .tag-must { background: color-mix(in srgb, currentColor 8%, transparent); }
+.yn::before { font-weight: 700; margin-inline-end: 2px; }
+.yn-yes::before { content: "✓" / ""; color: var(--nahal-ink); }
+.yn-no::before { content: "✗" / ""; color: var(--port-ink); }
+.yn-unknown::before { content: "?" / ""; color: var(--dune-ink); }
+.yn.selected.yn-yes { background: color-mix(in srgb, var(--nahal-500) 14%, var(--surface-raised)); border-color: var(--nahal-ink); box-shadow: inset 0 0 0 1px var(--nahal-ink); }
+.yn.selected.yn-no { background: color-mix(in srgb, var(--port-500) 12%, var(--surface-raised)); border-color: var(--port-ink); box-shadow: inset 0 0 0 1px var(--port-ink); }
+.yn.selected.yn-unknown { background: color-mix(in srgb, var(--dune-500) 14%, var(--surface-raised)); border-color: var(--dune-ink); box-shadow: inset 0 0 0 1px var(--dune-ink); }
+.chk::before { content: "" / ""; width: 13px; height: 13px; border: 1.5px solid currentColor; border-radius: 2px; display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.chk.selected { color: var(--nahal-ink); border-color: var(--nahal-ink); box-shadow: inset 0 0 0 1px var(--nahal-ink); background: color-mix(in srgb, var(--nahal-500) 12%, var(--surface-raised)); }
+.chk.selected::before { content: "✓" / ""; background: var(--nahal-ink); color: #fff; border-color: var(--nahal-ink); }
+
+/* ===== סיכה ננעצת על המפה ===== */
+.pin { width: 32px; height: 44px; cursor: grab; }
+.pin-body { filter: drop-shadow(0 6px 6px rgba(19,34,44,.35)); animation: pin-drop .55s cubic-bezier(.3,1.5,.5,1) both; }
+.pin-body.pin-drop { animation: pin-drop2 .55s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes pin-drop2 { 0% { transform: translateY(-40px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.pin:active { cursor: grabbing; }
+.pin svg { display: block; }
+.pin-shadow { position: absolute; left: 50%; bottom: -3px; width: 14px; height: 5px; margin-left: -7px; border-radius: 50%; background: rgba(19,34,44,.35); filter: blur(1.5px); }
+@keyframes pin-drop { 0% { transform: translateY(-40px); opacity: 0; } 60% { opacity: 1; } 100% { transform: none; opacity: 1; } }
+.pin-status { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-3); background: var(--sand); font-size: 14px; line-height: 20px; }
+.pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--ink-muted); }
+.pin-dot.on { background: var(--port-500); border-color: var(--port-500); box-shadow: 0 0 0 4px color-mix(in srgb, var(--port-500) 25%, transparent); }
+@media (max-width: 640px) { .pin-status { grid-template-columns: auto minmax(0, 1fr); } .pin-status .btn { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .pin-body, .pin-body.pin-drop { animation: none; } }
+
+/* ===== מה עושים כאן ===== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pguide { margin: calc(var(--space-5) * -1) 0 var(--space-6); padding: var(--space-4) var(--space-5); background: var(--sheen), var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); box-shadow: var(--shadow-1); display: grid; gap: var(--space-3); }
+.pguide-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: baseline; }
+.pguide-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: var(--space-3); counter-reset: none; }
+.pguide-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: var(--space-2); align-items: start; font-size: 14px; line-height: 21px; color: var(--ink-muted); padding: 6px 8px; border-radius: 2px; transition: background .3s, color .3s; }
+.pguide-n { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-family: var(--mono); font-size: 12px; background: var(--surface-raised); transition: all .3s var(--ease); }
+.pguide-steps li.is-now { color: var(--ink); background: color-mix(in srgb, var(--sea-500) 8%, transparent); }
+.pguide-steps li.is-now .pguide-n { border-color: var(--sea-ink); color: var(--sea-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--sea-500) 18%, transparent); }
+.pguide-steps li.is-done { color: var(--ink); }
+.pguide-steps li.is-done .pguide-n { background: var(--nahal-ink); border-color: var(--nahal-ink); color: #fff; }
+.pguide-steps li.is-done .pguide-n::before { content: "✓" / ""; font-family: var(--sans); font-weight: 700; font-size: 13px; }
+.pguide-note { margin: 0; }
+
+/* ===== טעינת מסמך בקשה ===== */
+.docimp { border: 1.5px dashed color-mix(in srgb, var(--line) 90%, var(--ink-muted)); padding: var(--space-4) var(--space-5); background: linear-gradient(160deg, var(--surface-raised), var(--sand)); display: grid; gap: var(--space-3); transition: border-color .2s, background .2s; }
+.docimp.is-over { border-color: var(--sea-ink); background: color-mix(in srgb, var(--sea-500) 10%, var(--surface-raised)); }
+.docimp-head { display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
+.docimp-head p { margin: 4px 0 0; }
+.docimp-body { display: grid; gap: var(--space-3); animation: rise .4s var(--ease) both; }
+.docimp-file { display: flex; gap: var(--space-3); align-items: baseline; }
+.docimp-status { margin: 0; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.docimp-status.error { color: var(--port-ink); }
+.docimp-status.ready { color: var(--nahal-ink); }
+.docimp-status.ready::before { content: "✓" / ""; font-weight: 700; }
+.docimp-found { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-2); margin: 0; }
+.docimp-found div { background: var(--surface-raised); border: 1px solid color-mix(in srgb, var(--line) 70%, transparent); padding: 8px 10px; }
+.docimp-found dt { font-size: 12px; color: var(--ink-muted); }
+.docimp-found dd { margin: 2px 0 0; font-weight: 500; word-break: break-word; }
+.docimp-text pre { white-space: pre-wrap; max-height: 220px; overflow: auto; font-size: 12px; background: var(--surface-raised); padding: var(--space-3); border: 1px solid var(--line); }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--sea-ink); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.just-filled { animation: filled 1.6s var(--ease); }
+@keyframes filled { 0% { background: color-mix(in srgb, var(--nahal-500) 30%, var(--surface-raised)); } 100% { background: var(--surface-raised); } }
+.track-list { display: grid; gap: var(--space-3); margin-top: var(--space-5); max-width: 720px; }
+.track-item { animation: rise .45s var(--ease) both; }
+
+/* סמל העירייה בפינה השמאלית של הסרגל */
+.city-logo { height: 40px; width: auto; flex: 0 0 auto; display: block; }
+@media (max-width: 1180px) {
+  .topnav-inner .menu-toggle { order: 1; margin-inline-start: auto; }
+  .topnav-inner .city-logo { order: 2; height: 34px; }
+  .topnav-inner .nav-links, .topnav-inner .nav-actions { order: 3; }
 }

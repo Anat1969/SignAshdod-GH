@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import CityMap from '../components/CityMap'
@@ -7,6 +7,7 @@ import { useStrip } from '../components/Shell'
 import { zoneAt } from '../lib/geo'
 import { land } from '../lib/landscapes'
 import { Loading } from '../components/bits'
+import Skyline from '../components/Skyline'
 
 const entries = [
   { to: '/check', n: '01', who: 'בעל עסק', title: 'מה מותר לתלות כאן?', text: 'כתובת, סוג שלט וכמה שאלות. התשובה מפנה לסעיף במדיניות, ובסופה בקשה שלמה.', color: 'var(--port-500)' },
@@ -21,7 +22,6 @@ export default function Home() {
   useStrip(zone ? zone.name : 'כתב העיר',
     zone ? (zone.note || 'אזור אופי') : 'השילוט הוא כתב היד של העיר. לחצו על המפה כדי לקרוא מה מותר בכל אזור.',
     zone ? land(zone.landscape).c500 : 'var(--port-500)')
-  const points = useMemo(() => (d.routes || []).flatMap((r) => r.stops.map((s) => ({ id: `${r.slug}:${s.building.id}`, lng: s.building.lng, lat: s.building.lat, landscape: r.sign?.landscape || 'dune', label: '' }))), [d.routes])
   if (d.loading) return <Loading />
   return (
     <div className="page page-wide">
@@ -40,22 +40,22 @@ export default function Home() {
             <Link to="/guide" className="btn">כל ההנחיות</Link>
           </div>
         </motion.div>
-        <CityMap zones={d.zones} selectedZoneId={zone?.id} points={points} marker={pt} height={560}
+        <CityMap zones={d.zones} selectedZoneId={zone?.id} marker={pt} height={560}
           onMapClick={(p) => { setPt(p); setZone(zoneAt(p, d.zones)) }} interactiveHint="לחיצה על המפה מציגה את אזור האופי" />
       </section>
 
-      <hr className="threshold" />
+      <Skyline />
 
-      <section className="grid-3">
+      <section className="grid-3 over-skyline">
         {entries.map((e, i) => (
-          <motion.div key={e.to} initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.45 }}>
+          <div key={e.to} className="rise" style={{ animationDelay: `${0.5 + i * 0.1}s` }}>
             <Link to={e.to} className={`entry lift ${i === 0 ? 'sail' : ''}`} style={{ '--entry-color': e.color }}>
               <span className="num">{e.n} · {e.who}</span>
               <h3>{e.title}</h3>
               <p>{e.text}</p>
               <span className="go">כניסה</span>
             </Link>
-          </motion.div>
+          </div>
         ))}
       </section>
 
