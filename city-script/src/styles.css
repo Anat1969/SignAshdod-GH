@@ -683,3 +683,11 @@ input:focus, select:focus, textarea:focus { box-shadow: 0 0 0 4px color-mix(in s
 @keyframes filled { 0% { background: color-mix(in srgb, var(--nahal-500) 30%, var(--surface-raised)); } 100% { background: var(--surface-raised); } }
 .track-list { display: grid; gap: var(--space-3); margin-top: var(--space-5); max-width: 720px; }
 .track-item { animation: rise .45s var(--ease) both; }
+
+/* סמל העירייה בפינה השמאלית של הסרגל */
+.city-logo { height: 40px; width: auto; flex: 0 0 auto; display: block; }
+@media (max-width: 1180px) {
+  .topnav-inner .menu-toggle { order: 1; margin-inline-start: auto; }
+  .topnav-inner .city-logo { order: 2; height: 34px; }
+  .topnav-inner .nav-links, .topnav-inner .nav-actions { order: 3; }
+}

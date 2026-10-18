@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, createContext, useContext, useCallback } f
 import { NavLink, Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
-const DEV_CHAT = 'https://claude.ai/code/session_01KhbwxVb8Xt7ssV48NyNngF'
+const DEV_CHAT = 'https://claude.ai/code/session_01ShvtgrWCbcnvbXLkMfbmAx'
 const RESEARCH = 'https://claude.ai/project/1767b4d0-9ab9-4d31-a2a4-05814819da6e'
 
 const StripCtx = createContext({ set: () => {} })
@@ -91,6 +91,7 @@ export default function Shell({ children }) {
                 </div>
               </div>
             </div>
+            <img className="city-logo" src="/ashdod-logo.png" alt="עיריית אשדוד" width="88" height="48" />
           </div>
         </header>
         <div className="strip" style={{ '--strip-color': strip.color || 'var(--port-500)' }} role="status" aria-live="polite">
