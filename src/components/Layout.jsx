@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import {
   LayoutDashboard,
@@ -7,10 +7,10 @@ import {
   List,
   Menu,
   X,
-  LogOut,
   Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AIMenu from "@/components/AIMenu";
 
 const navItems = [
   { path: "/", label: "לוח בקרה", icon: LayoutDashboard },
@@ -24,6 +24,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
 
   const isAdmin = user?.role === "admin";
+  const menuItems = useMemo(() => (user ? [{ label: "התנתקות", hint: user.email || "", onSelect: () => logout() }] : []), [user, logout]);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-heebo">
@@ -79,17 +80,6 @@ export default function Layout() {
                   </div>
                 </div>
               )}
-              {user && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="hidden sm:flex"
-                  title="התנתקות"
-                  onClick={() => logout()}
-                >
-                  <LogOut className="w-4 h-4" />
-                </Button>
-              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -98,6 +88,8 @@ export default function Layout() {
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
+              {/* A&I logo button: copy link, install, sign-out (https://appofapp-gh.vercel.app/ai-menu.js) */}
+              <AIMenu items={menuItems} />
             </div>
           </div>
         </div>
@@ -124,15 +116,6 @@ export default function Layout() {
                 </Link>
               );
             })}
-            {user && (
-              <button
-                onClick={() => { setMobileMenuOpen(false); logout(); }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-all mt-1"
-              >
-                <LogOut className="w-4 h-4" />
-                התנתקות
-              </button>
-            )}
           </div>
         )}
       </header>
