@@ -3,6 +3,15 @@
 ## A&I logo button
 The top bar holds only the app name (links home), content navigation, and ONE logo button "אד' ענת שטיבלמן A&I" (`<ai-menu>` from https://appofapp-gh.vercel.app/ai-menu.js). Every editing and development action (העתקת קישור, שיחת הפיתוח, פרויקט המחקר, התקנת האפליקציה, edit mode, add, delete) lives only inside it, never as loose buttons. Standard: https://github.com/Anat1969/AppOfApp-GH/blob/main/docs/ai-menu-standard.md
 
+## Addresses
+- Vercel (2026-11-03): https://signashdod-gh.vercel.app , project `signashdod-gh`, env `VITE_APPWRITE_ENDPOINT`,
+  `VITE_APPWRITE_PROJECT_ID` and `VITE_BASE=/`. `vercel.json` sends every path to `index.html` and makes no preview for
+  `claude/*`.
+- GitHub Pages: https://anat1969.github.io/SignAshdod-GH/ (`base` `/SignAshdod-GH/`, `.github/workflows/deploy.yml`).
+- Appwrite accepts requests only from hostnames listed under Platforms. The Vercel hostname must be added there once
+  (Appwrite Console, project, Overview, Platforms, Add platform, Web, hostname `signashdod-gh.vercel.app`), or sign-in on
+  Vercel fails while Pages keeps working.
+
 ## Ownership and logo
 The municipality's (Ashdod Municipality). `aoa_apps` id `app-1774955394081`, `data.owner = "ashdod"`. `<ai-menu brand="ashdod">`
 shows the Ashdod logo with the same menu inside.
