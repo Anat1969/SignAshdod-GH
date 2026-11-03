@@ -1,0 +1,11 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "claude/*": false,
+      "gh-pages": false
+    }
+  },
+  "rewrites": [
+    { "source": "/((?!assets/|favicon.svg).*)", "destination": "/index.html" }
+  ]
+}
