@@ -11,6 +11,8 @@ const AOA = process.env.AOA_PUBLIC ?? '/home/user/AppOfApp-GH/public';
 const [photoPath, signPath] = process.argv.slice(2);
 // a valid 2x2 PNG when no real image is given
 const tiny = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8z8DAwMDAxMDAwMDAAAANHQEDasKb6QAAAABJRU5ErkJggg==', 'base64');
+// a light grey map tile, so test screenshots look like a map and not a red square
+const tile = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGN48eoZAAV2ArmdvZ+MAAAAAElFTkSuQmCC', 'base64');
 const photo = photoPath ? fs.readFileSync(photoPath) : tiny;
 const signImg = signPath ? fs.readFileSync(signPath) : tiny;
 
@@ -23,7 +25,7 @@ const ok = (c, m) => {
 const now = new Date().toISOString();
 const row = (id, data) => ({ $id: id, $createdAt: now, $updatedAt: now, $permissions: [], ...data });
 const requests = [
-  row('r1', { request_type: 'project_sign', status: 'approved', site_address: 'שדרות הרצל 12, אשדוד', project_name: 'מגדלי הים', permit_number: '2024-118', developer_name: 'אחים כהן', sign_example_file: 'https://fra.cloud.appwrite.io/v1/storage/buckets/uploads/files/sign1/view?project=test' }),
+  row('r1', { request_type: 'project_sign', status: 'approved', site_address: 'שדרות הרצל 12, אשדוד', project_name: 'מגדלי הים', permit_number: '2024-118', developer_name: 'אחים כהן', applicant_phone: '050-1234567', sign_example_file: 'https://fra.cloud.appwrite.io/v1/storage/buckets/uploads/files/sign1/view?project=test' }),
   row('r2', { request_type: 'talking_fence', status: 'under_review', site_address: 'רחוב הנשיא 4, אשדוד', project_name: 'פינוי בינוי הנשיא', permit_number: '2025-031' }),
   row('r3', { request_type: 'project_sign', status: 'draft', site_address: 'טיוטה שלא אמורה להופיע' }),
 ];
@@ -31,6 +33,13 @@ const notes = [];
 
 async function setup(context, calls, admin = true) {
   await context.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await context.route(/tile\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'image/png', body: tile }));
+  // Herzl 12 is about 300 m from the inspector, HaNasi 4 about 1.5 km
+  await context.route(/nominatim\.openstreetmap\.org/, (r) => {
+    const q = new URL(r.request().url()).searchParams.get('q') || '';
+    const hit = q.includes('הרצל') ? { lat: '31.8040', lon: '34.6440' } : q.includes('הנשיא') ? { lat: '31.7880', lon: '34.6460' } : null;
+    return r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(hit ? [hit] : []) });
+  });
   await context.route(/appofapp-gh\.vercel\.app\/([\w.-]+\.(js|png))/, (r) => {
     const f = `${AOA}/${new URL(r.request().url()).pathname.slice(1)}`;
     return fs.existsSync(f) ? r.fulfill({ body: fs.readFileSync(f), contentType: f.endsWith('.js') ? 'text/javascript' : 'image/png', headers: { 'access-control-allow-origin': '*' } }) : r.fulfill({ status: 404, body: '' });
@@ -112,6 +121,11 @@ const browser = await chromium.launch();
   await page.locator('.field-search').fill('הנשיא');
   ok((await page.locator('.field-site').count()) === 1, 'phone: search narrows by street');
   await page.locator('.field-search').fill('');
+  await page.waitForFunction(() => document.querySelectorAll('.tour-map path.leaflet-interactive').length >= 3, null, { timeout: 8000 }).catch(() => {});
+  ok((await page.locator('.tour-map path.leaflet-interactive').count()) === 3, 'map: a pin for each site and one for me');
+  ok((await page.locator('.field-order').textContent()).includes('מרחק ממך'), 'map: the list says it is ordered by distance');
+  ok((await page.locator('.field-site').first().textContent()).includes('הרצל') && (await page.locator('.field-dist').first().textContent()).includes("מ'"), 'map: the nearest site is first, with its distance');
+  await page.waitForTimeout(400);
   await page.screenshot({ path: SHOTS + 'phone-list.png' });
   await page.locator('.field-site').first().click();
   ok(await page.locator('img[alt="השלט שאושר"]').isVisible(), 'phone: the approved sign shows next to the camera');
@@ -133,6 +147,11 @@ const browser = await chromium.launch();
   ok(created?.data?.note_text.includes('בדיקת שטח: שונה מהמאושר') && created.data.note_text.includes('31.80142,34.64357') && created.data.note_text.includes('/files/photo1/view'), 'phone: verdict, place and photo are in the note');
   ok(!(created?.permissions ?? []).some((p) => p.includes('user:') && !p.includes('u1')), 'phone: the applicant is not given read access');
   ok((await page.locator('.field-saved').textContent()).includes('הרצל'), 'phone: the tour lists what was saved');
+  await page.waitForSelector('.day-summary');
+  ok((await page.locator('.day-summary').textContent()).includes('אתר אחד נבדק היום'), 'summary: counts the sites checked today');
+  ok((await page.locator('.day-wa').getAttribute('href'))?.startsWith('https://wa.me/972501234567?text='), 'summary: WhatsApp to the applicant with a ready message');
+  ok(decodeURIComponent((await page.locator('.day-wa').getAttribute('href')) || '').includes('שונה מהמאושר'), 'summary: the message names the finding');
+  ok((await page.locator('.field-site', { hasText: 'הרצל' }).textContent()).includes('נבדק היום'), 'summary: the site is marked as checked today');
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), 'phone: no horizontal scroll');
   await page.screenshot({ path: SHOTS + 'phone-saved.png' });
 

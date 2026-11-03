@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { Camera, Loader2, MapPin, Search, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import StatusBadge from '../components/StatusBadge';
-import { VERDICTS, FIELD_TYPE, shrink, kb, locate, mapUrl, formatFieldNote } from '@/lib/field';
+import { VERDICTS, FIELD_TYPE, shrink, kb, locate, mapUrl, formatFieldNote, parseFieldNote, verdictOf } from '@/lib/field';
+import { geocodeAll, distance, fmtDistance } from '@/lib/geo';
+import TourMap from '../components/TourMap';
+import DaySummary from '../components/DaySummary';
 
 // A sign should stand at sites that were approved; those come first, then the ones still in review.
 const ORDER = { approved: 0, under_review: 1, submitted: 2, needs_revision: 3, rejected: 4 };
@@ -30,7 +33,23 @@ export default function FieldTour() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState([]);
   const [approvedBroken, setApprovedBroken] = useState(false);
+  const [coords, setCoords] = useState({}); // address -> { lat, lng }
+  const [here, setHere] = useState(null); // where the inspector stands
+  const [today, setToday] = useState([]); // field checks saved today, newest first
   const camera = useRef(null);
+
+  // where I am, once, for the map and the distance order
+  useEffect(() => {
+    locate().then((l) => l && setHere(l));
+  }, []);
+
+  // each site's address on the map, cached on the device
+  useEffect(() => {
+    if (!requests.length) return;
+    const ctl = new AbortController();
+    geocodeAll(requests.map((r) => r.site_address), (a, c) => setCoords((m) => ({ ...m, [a]: c })), { signal: ctl.signal });
+    return () => ctl.abort();
+  }, [requests]);
 
   useEffect(() => {
     (async () => {
@@ -40,6 +59,9 @@ export default function FieldTour() {
         if (user.role !== 'admin') return;
         const all = await base44.entities.SignageRequest.list('-created_date', 200);
         setRequests(all.filter((r) => r.status && r.status !== 'draft'));
+        const checks = await base44.entities.RequestNote.filter({ note_type: FIELD_TYPE }, '-created_date', 200);
+        const day = new Date().toDateString();
+        setToday(checks.filter((n) => new Date(n.created_date).toDateString() === day));
       } catch (e) {
         console.error(e);
         setError('לא ניתן לטעון את הבקשות כרגע. בדקו חיבור לרשת ונסו שוב.');
@@ -49,6 +71,8 @@ export default function FieldTour() {
     })();
   }, []);
 
+  const away = (r) => (here && coords[r.site_address] ? distance(here, coords[r.site_address]) : null);
+  const byDistance = !!here && Object.keys(coords).length > 0;
   const list = useMemo(() => {
     const words = q.trim().split(/\s+/).filter(Boolean);
     return requests
@@ -56,8 +80,29 @@ export default function FieldTour() {
         const hay = [r.site_address, r.project_name, r.permit_number, r.developer_name, r.contractor_name].join(' ');
         return words.every((w) => hay.includes(w));
       })
-      .sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
-  }, [requests, q]);
+      .sort((a, b) => {
+        if (byDistance) {
+          const da = away(a) ?? Infinity;
+          const db = away(b) ?? Infinity;
+          if (da !== db) return da - db;
+        }
+        return (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requests, q, coords, here]);
+
+  // the latest check of each site today colours its pin
+  const checkedToday = useMemo(() => {
+    const m = new Map();
+    for (const n of today) if (!m.has(n.request_id)) m.set(n.request_id, parseFieldNote(n.note_text).verdict);
+    return m;
+  }, [today]);
+  const pins = list
+    .filter((r) => coords[r.site_address])
+    .map((r) => {
+      const v = checkedToday.get(r.id);
+      return { id: r.id, ...coords[r.site_address], label: siteOf(r), verdict: v, tone: v ? verdictOf(v)?.tone : 'none' };
+    });
 
   const takePhoto = async (f) => {
     if (!f || !f.type.startsWith('image/')) return;
@@ -81,12 +126,13 @@ export default function FieldTour() {
     setError('');
     try {
       const photoUrl = photo ? (await base44.integrations.Core.UploadFile({ file: photo.file })).file_url : '';
-      await base44.entities.RequestNote.create({
+      const note = await base44.entities.RequestNote.create({
         request_id: picked.id,
         note_type: FIELD_TYPE,
         note_text: formatFieldNote({ verdict, remark, photoUrl, loc }),
       });
       setSaved((s) => [{ id: picked.id, site: siteOf(picked), verdict }, ...s]);
+      setToday((t) => [note, ...t]);
       reset();
     } catch (e) {
       console.error(e);
@@ -141,6 +187,8 @@ export default function FieldTour() {
         </section>
       )}
 
+      {!picked && <DaySummary checks={today} requests={requests} />}
+
       {error && <p className="field-error border border-red-200 bg-red-50 text-red-800 p-3 text-sm">{error}</p>}
 
       {!picked ? (
@@ -158,8 +206,17 @@ export default function FieldTour() {
               onChange={(e) => setQ(e.target.value)}
             />
           </label>
-          <p className="text-xs text-muted-foreground">
-            {list.length} אתרים. הבקשות שאושרו ראשונות, כי בהן השלט כבר אמור לעמוד.
+          <TourMap pins={pins} me={here} onPick={(id) => setPicked(requests.find((r) => r.id === id) || null)} />
+          <p className="field-legend text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#64748b' }} />טרם נבדק היום</span>
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#059669' }} />תואם</span>
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#ea580c' }} />שונה</span>
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#dc2626' }} />לא הותקן או מפגע</span>
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#2563eb' }} />אני</span>
+          </p>
+          <p className="field-order text-xs font-semibold">
+            {list.length} אתרים · מסודר לפי:{' '}
+            {byDistance ? 'מרחק ממך, הקרוב ראשון' : 'סטטוס, הבקשות שאושרו ראשונות (המיקום שלך עוד לא נקלט)'}
           </p>
           {list.length === 0 ? (
             <p className="text-sm text-muted-foreground py-6 text-center">
@@ -181,7 +238,11 @@ export default function FieldTour() {
                           .join(' · ')}
                       </span>
                     </span>
-                    <StatusBadge status={r.status} />
+                    <span className="flex flex-col items-end gap-1 shrink-0">
+                      <StatusBadge status={r.status} />
+                      {away(r) != null && <span className="field-dist text-[11px] text-muted-foreground">{fmtDistance(away(r))}</span>}
+                      {checkedToday.has(r.id) && <span className="text-[11px] font-semibold">נבדק היום</span>}
+                    </span>
                   </button>
                 </li>
               ))}
