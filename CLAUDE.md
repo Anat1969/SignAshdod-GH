@@ -49,6 +49,8 @@ Playwright from the global install: `ln -s "$(npm root -g)/playwright" node_modu
 - 2026-11-03: tour map ordered by distance, and a day summary with a ready message to the applicant.
 
 ## Learned while building
+- Vercel (2026-11-03): with 80 of 100 deployments used, `create_deployment` through the API still answered 402; a git push to the
+  main branch deployed. To deploy when the API refuses, merge a real change and check `list_deployments`.
 - Appwrite sends credentials, so a mocked response needs the exact origin and `access-control-allow-credentials: true`;
   with `*` the browser drops it and the app shows the sign-in screen.
 - A CSS rule on `svg` inside a card also hits the lucide icons; scope it to the QR's own wrapper.
