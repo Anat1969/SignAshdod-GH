@@ -4,7 +4,7 @@ import { Camera, Loader2, MapPin, Search, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import StatusBadge from '../components/StatusBadge';
 import { VERDICTS, FIELD_TYPE, shrink, kb, locate, mapUrl, formatFieldNote, parseFieldNote, verdictOf } from '@/lib/field';
-import { geocodeAll, distance, fmtDistance } from '@/lib/geo';
+import { geocodeAll, streetsAll, distance, fmtDistance } from '@/lib/geo';
 import TourMap from '../components/TourMap';
 import DaySummary from '../components/DaySummary';
 
@@ -33,7 +33,8 @@ export default function FieldTour() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState([]);
   const [approvedBroken, setApprovedBroken] = useState(false);
-  const [coords, setCoords] = useState({}); // address -> { lat, lng }
+  const [coords, setCoords] = useState({}); // address -> { lat, lng, approx } (approx: the street, not the house)
+  const [quarters, setQuarters] = useState({}); // address -> quarter, from the city's street layer
   const [here, setHere] = useState(null); // where the inspector stands
   const [today, setToday] = useState([]); // field checks saved today, newest first
   const camera = useRef(null);
@@ -47,7 +48,13 @@ export default function FieldTour() {
   useEffect(() => {
     if (!requests.length) return;
     const ctl = new AbortController();
-    geocodeAll(requests.map((r) => r.site_address), (a, c) => setCoords((m) => ({ ...m, [a]: c })), { signal: ctl.signal });
+    const addresses = requests.map((r) => r.site_address);
+    // first the street from the city's own layer (instant, with the quarter), then the house from Nominatim when found
+    streetsAll(addresses, (a, s) => {
+      setQuarters((m) => ({ ...m, [a]: s.quarter }));
+      setCoords((m) => (m[a] && !m[a].approx ? m : { ...m, [a]: { lat: s.lat, lng: s.lng, approx: true } }));
+    });
+    geocodeAll(addresses, (a, c) => setCoords((m) => ({ ...m, [a]: { ...c, approx: false } })), { signal: ctl.signal });
     return () => ctl.abort();
   }, [requests]);
 
@@ -101,7 +108,8 @@ export default function FieldTour() {
     .filter((r) => coords[r.site_address])
     .map((r) => {
       const v = checkedToday.get(r.id);
-      return { id: r.id, ...coords[r.site_address], label: siteOf(r), verdict: v, tone: v ? verdictOf(v)?.tone : 'none' };
+      const c = coords[r.site_address];
+      return { id: r.id, lat: c.lat, lng: c.lng, approx: c.approx, label: siteOf(r), verdict: v, tone: v ? verdictOf(v)?.tone : 'none' };
     });
 
   const takePhoto = async (f) => {
@@ -213,6 +221,7 @@ export default function FieldTour() {
             <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#ea580c' }} />שונה</span>
             <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#dc2626' }} />לא הותקן או מפגע</span>
             <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1" style={{ background: '#2563eb' }} />אני</span>
+            <span><i className="inline-block w-2.5 h-2.5 rounded-full align-middle ml-1 border border-dashed border-slate-500" />מיקום לפי הרחוב, לא הבית</span>
           </p>
           <p className="field-order text-xs font-semibold">
             {list.length} אתרים · מסודר לפי:{' '}
@@ -233,7 +242,7 @@ export default function FieldTour() {
                     <span className="min-w-0">
                       <span className="block font-bold truncate">{siteOf(r)}</span>
                       <span className="block text-xs text-muted-foreground truncate">
-                        {[r.project_name !== siteOf(r) && r.project_name, r.permit_number && `היתר ${r.permit_number}`, r.request_type === 'talking_fence' ? 'גדר מדברת' : 'שלט פרויקט']
+                        {[quarters[r.site_address], r.project_name !== siteOf(r) && r.project_name, r.permit_number && `היתר ${r.permit_number}`, r.request_type === 'talking_fence' ? 'גדר מדברת' : 'שלט פרויקט']
                           .filter(Boolean)
                           .join(' · ')}
                       </span>

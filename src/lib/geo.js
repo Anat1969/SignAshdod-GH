@@ -19,6 +19,33 @@ const write = (m) => {
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The shared municipality street layer (window.AIStreets, AppOfApp-GH streets.js): the street and quarter of an address at
+// once, with no external service. Its point is the middle of the street, so it is marked approx and Nominatim refines it.
+const streets = () =>
+  new Promise((resolve) => {
+    let n = 0;
+    const t = setInterval(() => {
+      if (window.AIStreets || ++n > 40) {
+        clearInterval(t);
+        resolve(window.AIStreets || null);
+      }
+    }, 100);
+  });
+
+/** Street and quarter for each address from the shared layer; onStreet(address, { lat, lng, name, quarter, approx }). */
+export async function streetsAll(addresses, onStreet) {
+  const S = await streets();
+  if (!S) return;
+  for (const a of new Set(addresses.filter(Boolean))) {
+    try {
+      const hit = await S.locate(a);
+      if (hit) onStreet(a, hit);
+    } catch {
+      return; // layer unavailable: the Nominatim lookup still runs
+    }
+  }
+}
 const withCity = (a) => (/אשדוד|ashdod/i.test(a) ? a : `${a}, אשדוד`);
 
 /** Coordinates for each address; calls onPin as each one arrives, cached ones at once. */
