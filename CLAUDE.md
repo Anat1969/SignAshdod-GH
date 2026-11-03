@@ -19,6 +19,12 @@ shows the Ashdod logo with the same menu inside.
 - Internal to the municipality: `create()` in `base44Client.js` does not give the applicant read access to a field check.
   A message to the applicant stays a regular note.
 
+- Map and order (2026-11-03): `TourMap.jsx` (Leaflet, OpenStreetMap tiles, wheel zoom) with a pin per site coloured by
+  today's check and a blue pin for the inspector. Addresses are looked up once in Nominatim (`src/lib/geo.js`, one a second,
+  cached in localStorage `sign-geo-v1`); with the location the list is ordered by distance and says so above it.
+- Day summary (`DaySummary.jsx`): today's checks from the server, the latest per site, counts per verdict, and for each site
+  that needs a fix a ready message (`messageFor`) by WhatsApp to the applicant's mobile or copied.
+
 ## Tests
 ```bash
 VITE_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1 VITE_APPWRITE_PROJECT_ID=test npm run build
@@ -28,9 +34,12 @@ Playwright from the global install: `ln -s "$(npm root -g)/playwright" node_modu
 
 ## Correction log
 - 2026-11-03: field tour; the logo button became the Ashdod one (the app is municipal, it showed A&I).
+- 2026-11-03: tour map ordered by distance, and a day summary with a ready message to the applicant.
 
 ## Learned while building
 - Appwrite sends credentials, so a mocked response needs the exact origin and `access-control-allow-credentials: true`;
   with `*` the browser drops it and the app shows the sign-in screen.
 - A CSS rule on `svg` inside a card also hits the lucide icons; scope it to the QR's own wrapper.
+- Leaflet adds a flag before the attribution; `attributionControl.setPrefix(false)` keeps only the OpenStreetMap credit.
+- Pins that arrive one by one need a refit each time, until the user moves the map, or the first pin sits at the edge.
 - Take a screenshot after the button transition (about 300ms), or a chosen button looks unchosen.
