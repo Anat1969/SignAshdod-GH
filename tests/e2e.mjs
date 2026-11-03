@@ -28,6 +28,8 @@ const requests = [
   row('r1', { request_type: 'project_sign', status: 'approved', site_address: 'שדרות הרצל 12, אשדוד', project_name: 'מגדלי הים', permit_number: '2024-118', developer_name: 'אחים כהן', applicant_phone: '050-1234567', sign_example_file: 'https://fra.cloud.appwrite.io/v1/storage/buckets/uploads/files/sign1/view?project=test' }),
   row('r2', { request_type: 'talking_fence', status: 'under_review', site_address: 'רחוב הנשיא 4, אשדוד', project_name: 'פינוי בינוי הנשיא', permit_number: '2025-031' }),
   row('r3', { request_type: 'project_sign', status: 'draft', site_address: 'טיוטה שלא אמורה להופיע' }),
+  // Nominatim does not know this one: the pin comes from the city's street layer
+  row('r4', { request_type: 'project_sign', status: 'submitted', site_address: "שד' בן גוריון 20, אשדוד", project_name: 'בית הספר החדש' }),
 ];
 const notes = [];
 
@@ -39,6 +41,11 @@ async function setup(context, calls, admin = true) {
     const q = new URL(r.request().url()).searchParams.get('q') || '';
     const hit = q.includes('הרצל') ? { lat: '31.8040', lon: '34.6440' } : q.includes('הנשיא') ? { lat: '31.7880', lon: '34.6460' } : null;
     return r.fulfill({ contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(hit ? [hit] : []) });
+  });
+  // the shared streets layer, served by the portfolio (Pages first)
+  await context.route(/anat1969\.github\.io\/AppOfApp-GH\/(streets\.js|gis\/ashdod-streets\.geojson)/, (r) => {
+    const f = `${AOA}/${new URL(r.request().url()).pathname.replace('/AppOfApp-GH/', '')}`;
+    return r.fulfill({ body: fs.readFileSync(f), contentType: f.endsWith('.js') ? 'text/javascript' : 'application/json', headers: { 'access-control-allow-origin': '*' } });
   });
   await context.route(/appofapp-gh\.vercel\.app\/([\w.-]+\.(js|png))/, (r) => {
     const f = `${AOA}/${new URL(r.request().url()).pathname.slice(1)}`;
@@ -116,13 +123,15 @@ const browser = await chromium.launch();
   page.on('pageerror', (e) => errs.push(e.message));
   await page.goto(BASE + '/field');
   await page.waitForSelector('.field-site');
-  ok((await page.locator('.field-site').count()) === 2, 'phone: drafts are left out of the tour');
+  ok((await page.locator('.field-site').count()) === 3, 'phone: drafts are left out of the tour');
   ok((await page.locator('.field-site').first().textContent()).includes('הרצל'), 'phone: approved sites come first');
   await page.locator('.field-search').fill('הנשיא');
   ok((await page.locator('.field-site').count()) === 1, 'phone: search narrows by street');
   await page.locator('.field-search').fill('');
-  await page.waitForFunction(() => document.querySelectorAll('.tour-map path.leaflet-interactive').length >= 3, null, { timeout: 8000 }).catch(() => {});
-  ok((await page.locator('.tour-map path.leaflet-interactive').count()) === 3, 'map: a pin for each site and one for me');
+  await page.waitForFunction(() => document.querySelectorAll('.tour-map path.leaflet-interactive').length >= 4, null, { timeout: 8000 }).catch(() => {});
+  ok((await page.locator('.tour-map path.leaflet-interactive').count()) === 4, 'map: a pin for each site and one for me');
+  ok((await page.locator('.tour-map path.leaflet-interactive[stroke-dasharray]').count()) === 1, 'streets: a site Nominatim does not know is placed by its street, dashed');
+  ok((await page.locator('.field-site', { hasText: 'בן גוריון' }).textContent()).includes('רובע ב'), 'streets: each site shows its quarter from the city layer');
   ok((await page.locator('.field-order').textContent()).includes('מרחק ממך'), 'map: the list says it is ordered by distance');
   ok((await page.locator('.field-site').first().textContent()).includes('הרצל') && (await page.locator('.field-dist').first().textContent()).includes("מ'"), 'map: the nearest site is first, with its distance');
   await page.waitForTimeout(400);

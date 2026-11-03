@@ -31,6 +31,9 @@ shows the Ashdod logo with the same menu inside.
 - Map and order (2026-11-03): `TourMap.jsx` (Leaflet, OpenStreetMap tiles, wheel zoom) with a pin per site coloured by
   today's check and a blue pin for the inspector. Addresses are looked up once in Nominatim (`src/lib/geo.js`, one a second,
   cached in localStorage `sign-geo-v1`); with the location the list is ordered by distance and says so above it.
+- City streets (2026-11-03): `index.html` loads the shared `streets.js` (AppOfApp-GH `docs/streets-standard.md`, Pages first).
+  `streetsAll` in `src/lib/geo.js` gives each site its quarter and an instant pin at the middle of its street (dashed, "מיקום
+  לפי הרחוב"); Nominatim then replaces it with the house when it finds one.
 - Day summary (`DaySummary.jsx`): today's checks from the server, the latest per site, counts per verdict, and for each site
   that needs a fix a ready message (`messageFor`) by WhatsApp to the applicant's mobile or copied.
 

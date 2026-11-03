@@ -43,8 +43,9 @@ export default function TourMap({ pins, me, onPick }) {
     layer.current.clearLayers();
     const pts = [];
     for (const p of pins) {
-      const m = Lf.circleMarker([p.lat, p.lng], { radius: 9, color: '#fff', weight: 2, fillColor: PIN[p.tone] || PIN.none, fillOpacity: 0.95 });
-      m.bindTooltip(`${p.label}${p.verdict ? ` · ${p.verdict}` : ''}`, { direction: 'top' });
+      // a pin placed by the street only (not the house) has a dashed edge, and says so
+      const m = Lf.circleMarker([p.lat, p.lng], { radius: 9, color: '#fff', weight: 2, dashArray: p.approx ? '3 3' : undefined, fillColor: PIN[p.tone] || PIN.none, fillOpacity: 0.95 });
+      m.bindTooltip(`${p.label}${p.verdict ? ` · ${p.verdict}` : ''}${p.approx ? ' · מיקום לפי הרחוב' : ''}`, { direction: 'top' });
       m.on('click', () => onPick(p.id));
       m.addTo(layer.current);
       pts.push([p.lat, p.lng]);
