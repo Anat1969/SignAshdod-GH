@@ -87,3 +87,7 @@
     @apply bg-background text-foreground font-heebo;
   }
 }
+/* Field tour (2026-11-03): the QR svg needs an explicit height, and the new screens use square buttons and frames. */
+.field-qr-code svg { width: 100%; height: auto; display: block; }
+.field-tour button, .field-tour input, .field-tour textarea, .field-qr, .field-note { border-radius: 0; }
+@media (prefers-reduced-motion: reduce) { .field-tour * { transition: none !important; } }

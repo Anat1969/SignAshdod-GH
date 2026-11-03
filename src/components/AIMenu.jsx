@@ -28,5 +28,6 @@ export default function AIMenu({ chat, research, items = [], status = '' }) {
     el.items = [...items, ...fromPages]
     el.status = status
   }, [items, fromPages, status])
-  return <ai-menu ref={ref} chat={chat || undefined} research={research || undefined} />
+  // A municipal app (aoa_apps data.owner = "ashdod"): the Ashdod Municipality logo, same menu inside.
+  return <ai-menu ref={ref} brand="ashdod" chat={chat || undefined} research={research || undefined} />
 }
