@@ -1,4 +1,6 @@
 import { Mail } from "lucide-react";
+import FieldCheckNote from "./FieldCheckNote";
+import { FIELD_TYPE } from "@/lib/field";
 
 const noteTypeLabels = {
   general: { label: "הערה כללית", color: "bg-slate-100 text-slate-700" },
@@ -18,6 +20,7 @@ export default function NotesList({ notes }) {
   return (
     <div className="space-y-3">
       {notes.map((note) => {
+        if (note.note_type === FIELD_TYPE) return <FieldCheckNote key={note.id} note={note} />;
         const config = noteTypeLabels[note.note_type] || noteTypeLabels.general;
         return (
           <div key={note.id} className="p-3 rounded-lg border border-border bg-card">

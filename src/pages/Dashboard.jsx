@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "../components/StatusBadge";
+import FieldQR from "../components/FieldQR";
 
 export default function Dashboard() {
   const [requests, setRequests] = useState([]);
@@ -96,6 +97,8 @@ export default function Dashboard() {
           </Button>
         </Link>
       </div>
+
+      {isAdmin && <FieldQR />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

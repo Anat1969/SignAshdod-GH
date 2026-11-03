@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const NewRequest = lazy(() => import('./pages/NewRequest'));
 const RequestsList = lazy(() => import('./pages/RequestsList'));
 const RequestDetails = lazy(() => import('./pages/RequestDetails'));
+const FieldTour = lazy(() => import('./pages/FieldTour'));
 
 const Spinner = () => (
   <div className="fixed inset-0 flex items-center justify-center">
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
           <Route path="/new-request" element={<NewRequest />} />
           <Route path="/requests" element={<RequestsList />} />
           <Route path="/request/:id" element={<RequestDetails />} />
+          <Route path="/field" element={<FieldTour />} />
           <Route path="*" element={<PageNotFound />} />
         </Route>
       </Routes>

@@ -103,7 +103,8 @@ function makeEntity(collectionId) {
       ];
 
       // For notes, also let the applicant (owner of the parent request) read them.
-      if (collectionId === COLLECTIONS.RequestNote && payload.request_id) {
+      // A field check (note_type field_check) is internal to the municipality: the applicant is not given read access.
+      if (collectionId === COLLECTIONS.RequestNote && payload.request_id && payload.note_type !== 'field_check') {
         try {
           const parent = await tablesDB.getRow(
             DATABASE_ID, COLLECTIONS.SignageRequest, payload.request_id

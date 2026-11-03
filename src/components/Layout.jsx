@@ -7,7 +7,8 @@ import {
   List,
   Menu,
   X,
-  Building2
+  Building2,
+  Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AIMenu from "@/components/AIMenu";
@@ -24,6 +25,8 @@ export default function Layout() {
   const { user, logout } = useAuth();
 
   const isAdmin = user?.role === "admin";
+  // Field tour (2026-11-03) is for municipal staff only.
+  const nav = isAdmin ? [...navItems, { path: "/field", label: "סיור שטח", icon: Camera }] : navItems;
   const menuItems = useMemo(() => (user ? [{ label: "התנתקות", hint: user.email || "", onSelect: () => logout() }] : []), [user, logout]);
 
   return (
@@ -44,7 +47,7 @@ export default function Layout() {
 
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => {
+              {nav.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
@@ -97,7 +100,7 @@ export default function Layout() {
         {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border bg-card pb-3 px-4">
-            {navItems.map((item) => {
+            {nav.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
