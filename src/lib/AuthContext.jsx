@@ -1,61 +1,9 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { createContext, useContext } from 'react';
 
-const AuthContext = createContext();
+// No sign-in (2026-11-07, Anat: "תבטל את עיניין ההתחברות"): everyone who opens the app works as municipal staff.
+const STAFF = { id: 'staff', email: '', full_name: 'צוות העירייה', role: 'admin' };
+const value = { user: STAFF, isAuthenticated: true, isLoadingAuth: false, authError: null, logout: () => {}, reloadUser: async () => STAFF };
+const AuthContext = createContext(value);
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [authError, setAuthError] = useState(null);
-
-  const loadUser = async () => {
-    try {
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      return currentUser;
-    } catch {
-      setUser(null);
-      setIsAuthenticated(false);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      await loadUser();
-      if (active) setIsLoadingAuth(false);
-    })();
-    return () => { active = false; };
-  }, []);
-
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    base44.auth.logout();
-  };
-
-  return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoadingAuth,
-      authError,
-      logout,
-      // Called by the Login screen after a successful code verification.
-      reloadUser: loadUser,
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthProvider = ({ children }) => <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+export const useAuth = () => useContext(AuthContext);

@@ -6,7 +6,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import Layout from './components/Layout';
-import Login from './pages/Login';
 
 // Route pages are code-split so the initial load stays small (the PDF export
 // libraries in NewRequest, for example, only download when that page opens).
@@ -30,10 +29,8 @@ const AuthenticatedApp = () => {
     return <Spinner />;
   }
 
-  // Not signed in -> show the login screen (Google sign-in).
-  if (!isAuthenticated) {
-    return <Login />;
-  }
+  // No sign-in screen (2026-11-07): everyone works as municipal staff.
+  if (!isAuthenticated) return <Spinner />;
 
   // Render the main app.
   return (
