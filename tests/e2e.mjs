@@ -1,5 +1,5 @@
-// Field tour end to end against `vite preview`, with every Appwrite call mocked.
-// Run: VITE_APPWRITE_ENDPOINT=https://fra.cloud.appwrite.io/v1 VITE_APPWRITE_PROJECT_ID=test npm run build
+// Field tour end to end against `vite preview`, with every Supabase call mocked (no sign-in since 2026-11-07).
+// Run: npm run build
 //      && (npx vite preview --port 4174 &) && node tests/e2e.mjs [real-photo.png approved-sign.png]
 import { chromium } from 'playwright';
 import fs from 'node:fs';
@@ -23,9 +23,9 @@ const ok = (c, m) => {
 };
 
 const now = new Date().toISOString();
-const row = (id, data) => ({ $id: id, $createdAt: now, $updatedAt: now, $permissions: [], ...data });
+const row = (id, data) => ({ id, data, created_at: now, updated_at: now });
 const requests = [
-  row('r1', { request_type: 'project_sign', status: 'approved', site_address: 'שדרות הרצל 12, אשדוד', project_name: 'מגדלי הים', permit_number: '2024-118', developer_name: 'אחים כהן', applicant_phone: '050-1234567', sign_example_file: 'https://fra.cloud.appwrite.io/v1/storage/buckets/uploads/files/sign1/view?project=test' }),
+  row('r1', { request_type: 'project_sign', status: 'approved', site_address: 'שדרות הרצל 12, אשדוד', project_name: 'מגדלי הים', permit_number: '2024-118', developer_name: 'אחים כהן', applicant_phone: '050-1234567', sign_example_file: 'https://ktqmwpbzcnzkhjskqisy.supabase.co/storage/v1/object/public/sign-media/2026-10/sign1.png' }),
   row('r2', { request_type: 'talking_fence', status: 'under_review', site_address: 'רחוב הנשיא 4, אשדוד', project_name: 'פינוי בינוי הנשיא', permit_number: '2025-031' }),
   row('r3', { request_type: 'project_sign', status: 'draft', site_address: 'טיוטה שלא אמורה להופיע' }),
   // Nominatim does not know this one: the pin comes from the city's street layer
@@ -51,41 +51,39 @@ async function setup(context, calls, admin = true) {
     const f = `${AOA}/${new URL(r.request().url()).pathname.slice(1)}`;
     return fs.existsSync(f) ? r.fulfill({ body: fs.readFileSync(f), contentType: f.endsWith('.js') ? 'text/javascript' : 'image/png', headers: { 'access-control-allow-origin': '*' } }) : r.fulfill({ status: 404, body: '' });
   });
-  await context.route(/fra\.cloud\.appwrite\.io\/v1\/(.*)/, async (r) => {
+  await context.route(/ktqmwpbzcnzkhjskqisy\.supabase\.co\/(.*)/, async (r) => {
     const req = r.request();
     const url = new URL(req.url());
-    const path = url.pathname.replace('/v1', '');
-    // Appwrite sends credentials, so CORS needs the exact origin, never '*'
-    const cors = { 'access-control-allow-origin': new URL(BASE).origin, 'access-control-allow-credentials': 'true' };
-    const json = (body, status = 200) => r.fulfill({ status, contentType: 'application/json', headers: cors, body: JSON.stringify(body) });
-    if (req.method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { ...cors, 'access-control-allow-headers': req.headers()['access-control-request-headers'] || '*', 'access-control-allow-methods': 'GET,POST,PUT,PATCH,DELETE' } });
-    if (path === '/account') return json({ $id: 'u1', email: 'pakach@ashdod.muni.il', name: 'פקח השילוט', labels: admin ? ['admin'] : [] });
-    if (/\/storage\/buckets\/uploads\/files\/[^/]+\/view/.test(path)) return r.fulfill({ contentType: 'image/png', body: signImg });
-    if (path === '/storage/buckets/uploads/files' && req.method() === 'POST') {
-      calls.push({ action: 'upload', size: req.postDataBuffer()?.length ?? 0 });
-      return json({ $id: 'photo1', bucketId: 'uploads', name: 'field.jpg', chunksTotal: 1, chunksUploaded: 1 });
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET,POST,PATCH,DELETE' };
+    if (req.method() === 'OPTIONS') return r.fulfill({ status: 204, headers: cors });
+    const single = (req.headers()['accept'] || '').includes('vnd.pgrst.object');
+    const json = (body, status = 200) => r.fulfill({ status, contentType: 'application/json', headers: cors, body: JSON.stringify(single && Array.isArray(body) ? body[0] ?? null : body) });
+    if (url.pathname.startsWith('/storage/v1/object/public/')) return r.fulfill({ contentType: 'image/png', body: signImg, headers: cors });
+    if (url.pathname.startsWith('/storage/v1/object/sign-media/') && req.method() === 'POST') {
+      calls.push({ action: 'upload', size: req.postDataBuffer()?.length ?? 0, path: url.pathname });
+      return json({ Key: url.pathname.replace('/storage/v1/object/', '') });
     }
-    const m = path.match(/^\/tablesdb\/signash\/tables\/(\w+)\/rows(?:\/(\w+))?$/);
-    if (m) {
-      const [, table, id] = m;
-      const list = table === 'signage_requests' ? requests : notes;
-      if (req.method() === 'POST') {
-        const body = JSON.parse(req.postData() || '{}');
-        const doc = row(`n${notes.length + 1}`, body.data);
-        calls.push({ action: 'create', table, data: body.data, permissions: body.permissions });
-        if (table === 'request_notes') notes.unshift(doc);
-        return json(doc, 201);
-      }
-      if (id) {
-        const doc = list.find((x) => x.$id === id);
-        return doc ? json(doc) : json({ message: 'not found' }, 404);
-      }
-      const qs = url.searchParams.getAll('queries[]').join(' ');
-      const rid = qs.match(/"request_id".*?\["(\w+)"\]/)?.[1];
-      const rows = rid ? list.filter((x) => x.request_id === rid) : list;
-      return json({ total: rows.length, rows });
+    const m = url.pathname.match(/^\/rest\/v1\/(sign_requests|sign_notes)$/);
+    if (!m) return json({});
+    const table = m[1];
+    const list = table === 'sign_requests' ? requests : notes;
+    const eq = (k) => url.searchParams.get(k)?.replace(/^eq\./, '');
+    if (req.method() === 'POST') {
+      const body = JSON.parse(req.postData() || '{}');
+      const doc = table === 'sign_notes' ? { id: `n${notes.length + 1}`, created_at: new Date().toISOString(), ...body } : row(`q${requests.length + 1}`, body.data);
+      calls.push({ action: 'create', table, data: body });
+      list.unshift(doc);
+      return json([doc], 201);
     }
-    return json({});
+    if (req.method() === 'PATCH') {
+      const doc = list.find((x) => x.id === eq('id'));
+      Object.assign(doc, JSON.parse(req.postData() || '{}'));
+      calls.push({ action: 'update', table, id: doc.id });
+      return json([doc]);
+    }
+    let rows = list;
+    for (const k of ['id', 'request_id', 'note_type']) if (eq(k)) rows = rows.filter((x) => x[k] === eq(k));
+    return json(rows);
   });
 }
 
@@ -150,11 +148,10 @@ const browser = await chromium.launch();
   await page.screenshot({ path: SHOTS + 'phone-check.png' });
   await page.locator('.field-save').click();
   await page.waitForSelector('.field-saved');
-  const created = calls.find((c) => c.action === 'create' && c.table === 'request_notes');
+  const created = calls.find((c) => c.action === 'create' && c.table === 'sign_notes');
   ok(calls.some((c) => c.action === 'upload'), 'phone: the photo is uploaded');
-  ok(created?.data?.note_type === 'field_check' && created.data.request_id === 'r1', 'phone: saved on the request as a field check');
-  ok(created?.data?.note_text.includes('בדיקת שטח: שונה מהמאושר') && created.data.note_text.includes('31.80142,34.64357') && created.data.note_text.includes('/files/photo1/view'), 'phone: verdict, place and photo are in the note');
-  ok(!(created?.permissions ?? []).some((p) => p.includes('user:') && !p.includes('u1')), 'phone: the applicant is not given read access');
+  ok(created?.table === 'sign_notes' && created.data.note_type === 'field_check' && created.data.request_id === 'r1', 'phone: saved on the request as a field check');
+  ok(created?.data?.note_text.includes('בדיקת שטח: שונה מהמאושר') && created.data.note_text.includes('31.80142,34.64357') && created.data.note_text.includes('/storage/v1/object/public/sign-media/'), 'phone: verdict, place and photo are in the note');
   ok((await page.locator('.field-saved').textContent()).includes('הרצל'), 'phone: the tour lists what was saved');
   await page.waitForSelector('.day-summary');
   ok((await page.locator('.day-summary').textContent()).includes('אתר אחד נבדק היום'), 'summary: counts the sites checked today');
@@ -173,15 +170,15 @@ const browser = await chromium.launch();
   await context.close();
 }
 
-// ---------- an applicant does not get the tour ----------
+// ---------- no sign-in (2026-11-07): the app opens straight to work ----------
 {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await setup(context, [], false);
+  await setup(context, []);
   const page = await context.newPage();
-  await page.goto(BASE + '/field');
-  await page.waitForSelector('main h1');
-  ok((await page.locator('main h1').textContent()).includes('לצוות העירייה'), 'applicant: the tour explains it is for staff');
-  ok((await page.locator('.field-qr').count()) === 0, 'applicant: no QR card');
+  await page.goto(BASE + '/');
+  await page.waitForSelector('.field-qr-code svg, main h1');
+  ok((await page.locator('input[type=email]').count()) === 0, 'no sign-in: no e-mail code screen');
+  ok((await page.locator('body').textContent()).includes('שלום, צוות העירייה'), 'no sign-in: the dashboard opens at once, as municipal staff');
   await context.close();
 }
 

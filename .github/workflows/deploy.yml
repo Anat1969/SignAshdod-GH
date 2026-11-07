@@ -28,13 +28,7 @@ jobs:
       - run: npm ci
 
       - name: Build
-        env:
-          # Appwrite endpoint + project id are public by design (access is
-          # controlled by Appwrite permissions). Stored as repo secrets so they
-          # can be changed without a code edit. Set them under:
-          # Settings -> Secrets and variables -> Actions.
-          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
-          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
+        # No server keys at build time: the data layer (Supabase, public key) is in the code since 2026-11-07.
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3

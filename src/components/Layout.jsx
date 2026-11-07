@@ -22,12 +22,13 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const isAdmin = user?.role === "admin";
   // Field tour (2026-11-03) is for municipal staff only.
   const nav = isAdmin ? [...navItems, { path: "/field", label: "סיור שטח", icon: Camera }] : navItems;
-  const menuItems = useMemo(() => (user ? [{ label: "התנתקות", hint: user.email || "", onSelect: () => logout() }] : []), [user, logout]);
+  // No sign-in, so no sign-out item (2026-11-07).
+  const menuItems = useMemo(() => [], []);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background font-heebo">

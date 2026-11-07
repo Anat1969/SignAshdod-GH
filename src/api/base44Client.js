@@ -1,208 +1,125 @@
-// Compatibility layer.
+// Data layer (2026-11-07). The app moved off Appwrite, whose free project paused for inactivity and locked everyone out
+// at the sign-in screen. Anat: "תבטל את עיניין ההתחברות". The data now lives in the shared Supabase project of her apps
+// (cultura-GH, tables with the prefix sign_), with no sign-in: everyone who opens the app works as municipal staff,
+// like the app portfolio (AppOfApp-GH, "editing is open on every device").
 //
-// This project was migrated off Base44. To keep the rest of the app unchanged,
-// we expose an object with the SAME shape the code used to import from the
-// Base44 SDK (`base44.auth`, `base44.entities.*`, `base44.integrations.Core.*`),
-// but every method is now backed by Appwrite (database, auth, storage).
-//
-// Nothing here depends on Base44 anymore.
-import { ID, Query, Permission, Role } from 'appwrite';
-import {
-  account,
-  tablesDB,
-  storage,
-  DATABASE_ID,
-  BUCKET_ID,
-  COLLECTIONS,
-  fileViewUrl,
-} from '@/api/appwriteClient';
+// The object keeps the shape the pages already import (base44.auth, base44.entities.*, base44.integrations.Core.*),
+// so no page had to change. Migration: supabase/migrations/20261107_sign_open_editing.sql.
+import { createClient } from '@supabase/supabase-js';
 
-/* ----------------------------- helpers ----------------------------- */
+export const SUPABASE_URL = 'https://ktqmwpbzcnzkhjskqisy.supabase.co';
+// the publishable key is public by design: access is set by the tables' row level security
+export const SUPABASE_KEY = 'sb_publishable_IkreG7naPa1h-d4kGp1gpA_sLU4tg5q';
+export const BUCKET = 'sign-media';
 
-// Appwrite documents carry $id / $createdAt / $updatedAt / $permissions etc.
-// The app expects `id` and `created_date`, so map them onto every row.
-function mapDoc(doc) {
-  if (!doc) return doc;
-  return { ...doc, id: doc.$id, created_date: doc.$createdAt };
-}
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
-// Strip synthetic / system fields before writing back to Appwrite.
-function sanitize(data) {
+const fail = (error, what) => {
+  const e = new Error(`${what}: ${error.message || 'שגיאה בשרת'}. בדקו חיבור לרשת ונסו שוב.`);
+  e.cause = error;
+  throw e;
+};
+
+/* --------------------------- signage requests -------------------------- */
+// One row per request: the request's own fields live in `data` (jsonb), so every form field is kept as it is.
+const fromRequest = (row) => row && { ...row.data, id: row.id, created_date: row.created_at, updated_date: row.updated_at };
+const strip = (data) => {
   const out = {};
-  for (const [k, v] of Object.entries(data || {})) {
-    if (k === 'id' || k === 'created_date') continue;
-    if (k.startsWith('$')) continue;
-    if (v === undefined) continue;
-    out[k] = v;
-  }
+  for (const [k, v] of Object.entries(data || {})) if (!['id', 'created_date', 'updated_date'].includes(k) && v !== undefined) out[k] = v;
   return out;
-}
+};
+const ascending = (sort) => !!sort && !sort.startsWith('-');
 
-// Base44 sort strings: "-created_date" (desc) / "created_date" (asc).
-// created_date maps to the built-in $createdAt attribute.
-function sortQuery(sort) {
-  if (!sort) return Query.orderDesc('$createdAt');
-  const ascending = !sort.startsWith('-');
-  let column = ascending ? sort : sort.slice(1);
-  if (column === 'created_date') column = '$createdAt';
-  return ascending ? Query.orderAsc(column) : Query.orderDesc(column);
-}
-
-async function currentAccount() {
-  return account.get();
-}
-
-/* ----------------------------- entities ---------------------------- */
-
-function makeEntity(collectionId) {
-  return {
-    async list(sort, limit) {
-      const queries = [sortQuery(sort)];
-      if (limit) queries.push(Query.limit(limit));
-      const res = await tablesDB.listRows(DATABASE_ID, collectionId, queries);
-      return res.rows.map(mapDoc);
-    },
-
-    async filter(query = {}, sort, limit) {
-      // Special-case a lookup by id -> fetch the single document.
-      const keys = Object.keys(query);
-      if (keys.length === 1 && keys[0] === 'id') {
-        try {
-          const doc = await tablesDB.getRow(DATABASE_ID, collectionId, query.id);
-          return [mapDoc(doc)];
-        } catch {
-          return [];
-        }
-      }
-      const queries = [];
-      for (const [key, value] of Object.entries(query)) {
-        queries.push(Query.equal(key === 'id' ? '$id' : key, value));
-      }
-      queries.push(sortQuery(sort));
-      if (limit) queries.push(Query.limit(limit));
-      const res = await tablesDB.listRows(DATABASE_ID, collectionId, queries);
-      return res.rows.map(mapDoc);
-    },
-
-    async get(id) {
-      const doc = await tablesDB.getRow(DATABASE_ID, collectionId, id);
-      return mapDoc(doc);
-    },
-
-    async create(data) {
-      const me = await currentAccount();
-      const payload = sanitize(data);
-      payload.created_by = me.email;
-      payload.owner_id = me.$id;
-
-      // Per-document permissions: the owner can read & update their own row;
-      // admins are granted collection-level access at setup time.
-      const permissions = [
-        Permission.read(Role.user(me.$id)),
-        Permission.update(Role.user(me.$id)),
-      ];
-
-      // For notes, also let the applicant (owner of the parent request) read them.
-      // A field check (note_type field_check) is internal to the municipality: the applicant is not given read access.
-      if (collectionId === COLLECTIONS.RequestNote && payload.request_id && payload.note_type !== 'field_check') {
-        try {
-          const parent = await tablesDB.getRow(
-            DATABASE_ID, COLLECTIONS.SignageRequest, payload.request_id
-          );
-          if (parent.owner_id && parent.owner_id !== me.$id) {
-            permissions.push(Permission.read(Role.user(parent.owner_id)));
-          }
-        } catch { /* parent unreadable — admin-only note */ }
-      }
-
-      const doc = await tablesDB.createRow(
-        DATABASE_ID, collectionId, ID.unique(), payload, permissions
-      );
-      return mapDoc(doc);
-    },
-
-    async update(id, data) {
-      const doc = await tablesDB.updateRow(
-        DATABASE_ID, collectionId, id, sanitize(data)
-      );
-      return mapDoc(doc);
-    },
-
-    async delete(id) {
-      await tablesDB.deleteRow(DATABASE_ID, collectionId, id);
-      return true;
-    },
-  };
-}
-
-/* ------------------------------- auth ------------------------------ */
-
-async function me() {
-  let user;
-  try {
-    user = await account.get();
-  } catch (e) {
-    const err = new Error('Not authenticated');
-    err.status = 401;
-    throw err;
-  }
-  const labels = user.labels || [];
-  return {
-    id: user.$id,
-    email: user.email,
-    full_name: user.name || user.email,
-    role: labels.includes('admin') ? 'admin' : 'user',
-  };
-}
-
-const auth = {
-  me,
-
-  // Email OTP login (no passwords, no external provider setup).
-  // Step 1: send a 6-digit code to the given email. Returns the userId that
-  // must be paired with the code in step 2.
-  async sendEmailCode(email) {
-    const token = await account.createEmailToken(ID.unique(), email);
-    return token.userId;
+const SignageRequest = {
+  async list(sort = '-created_date', limit = 200) {
+    const { data, error } = await supabase.from('sign_requests').select('*').order('created_at', { ascending: ascending(sort) }).limit(limit);
+    if (error) fail(error, 'טעינת הבקשות נכשלה');
+    return data.map(fromRequest);
   },
-
-  // Step 2: exchange the userId + the code the user typed for a session.
-  async verifyEmailCode(userId, code) {
-    return account.createSession(userId, code);
+  async filter(query = {}, sort = '-created_date', limit = 200) {
+    let q = supabase.from('sign_requests').select('*');
+    for (const [k, v] of Object.entries(query)) q = k === 'id' ? q.eq('id', v) : q.eq(`data->>${k}`, String(v));
+    const { data, error } = await q.order('created_at', { ascending: ascending(sort) }).limit(limit);
+    if (error) fail(error, 'טעינת הבקשות נכשלה');
+    return data.map(fromRequest);
   },
-
-  async logout() {
-    try {
-      await account.deleteSession('current');
-    } catch { /* already signed out */ }
-    window.location.href = window.location.origin + import.meta.env.BASE_URL;
+  async get(id) {
+    const [row] = await SignageRequest.filter({ id });
+    return row;
+  },
+  async create(fields) {
+    const { data, error } = await supabase.from('sign_requests').insert({ data: { ...strip(fields), created_by: fields.created_by || 'צוות העירייה' } }).select().single();
+    if (error) fail(error, 'שמירת הבקשה נכשלה');
+    return fromRequest(data);
+  },
+  async update(id, fields) {
+    // merge into the stored fields, so a partial update (e.g. only status) keeps the rest
+    const { data: cur, error: readError } = await supabase.from('sign_requests').select('data').eq('id', id).single();
+    if (readError) fail(readError, 'הבקשה לא נמצאה');
+    const { data, error } = await supabase.from('sign_requests').update({ data: { ...cur.data, ...strip(fields) }, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    if (error) fail(error, 'עדכון הבקשה נכשל');
+    return fromRequest(data);
   },
 };
 
-/* --------------------------- integrations -------------------------- */
+/* -------------------------------- notes -------------------------------- */
+const fromNote = (row) => row && { ...row, created_date: row.created_at };
 
-const Core = {
-  // Upload to Appwrite Storage; return a public "view" URL.
-  async UploadFile({ file }) {
-    let permissions;
-    try {
-      const me = await account.get();
-      permissions = [Permission.read(Role.any()), Permission.update(Role.user(me.$id))];
-    } catch {
-      permissions = [Permission.read(Role.any())];
-    }
-    const created = await storage.createFile(BUCKET_ID, ID.unique(), file, permissions);
-    return { file_url: fileViewUrl(created.$id) };
+const RequestNote = {
+  async filter(query = {}, sort = '-created_date', limit = 200) {
+    let q = supabase.from('sign_notes').select('*');
+    for (const [k, v] of Object.entries(query)) q = q.eq(k, v);
+    const { data, error } = await q.order('created_at', { ascending: ascending(sort) }).limit(limit);
+    if (error) fail(error, 'טעינת ההערות נכשלה');
+    return data.map(fromNote);
   },
+  async create(fields) {
+    const row = {
+      request_id: fields.request_id,
+      note_type: fields.note_type || 'general',
+      note_text: fields.note_text,
+      sent_to_applicant: !!fields.sent_to_applicant,
+      created_by: fields.created_by || 'צוות העירייה',
+    };
+    const { data, error } = await supabase.from('sign_notes').insert(row).select().single();
+    if (error) fail(error, 'שמירת ההערה נכשלה');
+    return fromNote(data);
+  },
+  async update(id, fields) {
+    const { id: _i, created_date: _c, ...rest } = fields;
+    const { data, error } = await supabase.from('sign_notes').update(rest).eq('id', id).select().single();
+    if (error) fail(error, 'עדכון ההערה נכשל');
+    return fromNote(data);
+  },
+};
 
-  // Deferred (needs a server-side email provider + API key). Resolves quietly
-  // so status flows that call it still complete.
+/* --------------------------------- auth -------------------------------- */
+// No sign-in. Everyone works as municipal staff, so every staff feature (field tour, review, approval) is open.
+const STAFF = { id: 'staff', email: '', full_name: 'צוות העירייה', role: 'admin' };
+const auth = {
+  async me() {
+    return STAFF;
+  },
+};
+
+/* ------------------------------ integrations --------------------------- */
+const Core = {
+  // A public file in the sign-media bucket; returns its address.
+  async UploadFile({ file }) {
+    const ext = ((file.name || '').split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+    const path = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type || undefined, upsert: false });
+    if (error) fail(error, 'העלאת הקובץ נכשלה');
+    return { file_url: supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
+  },
+  // Deferred (needs a server-side email provider). Resolves quietly so status flows still complete.
   async SendEmail(payload) {
-    console.warn('[SendEmail] deferred — email sending is not configured yet.', payload);
+    console.warn('[SendEmail] deferred: email sending is not configured yet.', payload);
     return { success: false, deferred: true };
   },
-
-  // Deferred (needs a server-side LLM provider + API key).
+  // Deferred (needs a server-side model). The page explains it.
   async InvokeLLM() {
     const err = new Error('חילוץ נתונים עם AI יתווסף בשלב הבא ואינו זמין כרגע.');
     err.deferred = true;
@@ -210,15 +127,5 @@ const Core = {
   },
 };
 
-/* ------------------------------ export ----------------------------- */
-
-export const base44 = {
-  auth,
-  entities: {
-    SignageRequest: makeEntity(COLLECTIONS.SignageRequest),
-    RequestNote: makeEntity(COLLECTIONS.RequestNote),
-  },
-  integrations: { Core },
-};
-
+export const base44 = { auth, entities: { SignageRequest, RequestNote }, integrations: { Core } };
 export default base44;
