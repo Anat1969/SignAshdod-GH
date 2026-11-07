@@ -1,0 +1,18 @@
+[
+ {"project_name":"דוגמה 1: מגדלי העצמאות","request_type":"project_sign","status":"approved","site_address":"העצמאות 45, אשדוד","permit_number":"20250417","permit_nature":"בניית מגדל מגורים, 18 קומות ו-72 יחידות דיור",
+  "applicant_name":"נועה לוי (דוגמה)","applicant_phone":"050-0000001","applicant_email":"example1@example.com",
+  "company_name":"ים תיכון יזמות בע\"מ","company_po_box":"510000001","company_address":"העצמאות 45, אשדוד",
+  "developer_name":"ים תיכון יזמות","architect_name":"אדר' דנה כהן","contractor_name":"בוני הדרום","contractor_license":"12345","engineer_name":"מהנדס יוסי ברק","engineer_license":"67890","site_manager_name":"משה אזולאי","safety_officer_name":"רונית שמש",
+  "city_architect_approved":true,"signage_committee_approved":true,"municipal_supervision_approved":true},
+ {"project_name":"דוגמה 2: בית רוגוזין","request_type":"talking_fence","status":"needs_revision","site_address":"רוגוזין 30, אשדוד","permit_number":"20250988","permit_nature":"מגורים מעל מסחר, 5 קומות",
+  "applicant_name":"אבי מזרחי (דוגמה)","applicant_phone":"050-0000002","applicant_email":"example2@example.com",
+  "company_name":"רוגוזין נכסים בע\"מ","company_po_box":"510000002","company_address":"רוגוזין 30, אשדוד",
+  "developer_name":"רוגוזין נכסים","architect_name":"אדר' מיכל פרץ","contractor_name":"א.ב. קבלנות","contractor_license":"23456","engineer_name":"מהנדסת שרה גל","engineer_license":"78901","site_manager_name":"דוד חדד","safety_officer_name":"אלי נחום",
+  "fence_total_length_meters":64,"fence_developer_percent":40,"fence_municipality_percent":60,
+  "city_architect_approved":true,"signage_committee_approved":false,"municipal_supervision_approved":false},
+ {"project_name":"דוגמה 3: מרכז קהילתי הבנים","request_type":"project_sign","status":"submitted","site_address":"הבנים 8, אשדוד","permit_number":"20260112","permit_nature":"מבנה ציבור, מרכז קהילתי 2 קומות",
+  "applicant_name":"תמר אוחיון (דוגמה)","applicant_phone":"050-0000003","applicant_email":"example3@example.com",
+  "company_name":"החברה העירונית לדוגמה","company_po_box":"510000003","company_address":"הבנים 8, אשדוד",
+  "developer_name":"עיריית אשדוד, אגף מבני ציבור","architect_name":"אדר' יעל רוזן","contractor_name":"גל בנייה","contractor_license":"34567","engineer_name":"מהנדס עמית שור","engineer_license":"89012","site_manager_name":"","safety_officer_name":"",
+  "city_architect_approved":false,"signage_committee_approved":false,"municipal_supervision_approved":false}
+]

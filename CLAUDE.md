@@ -20,6 +20,17 @@ The top bar holds only the app name (links home), content navigation, and ONE lo
 - `src/api/base44Client.js` keeps the old `base44.*` shape, so no page changed. The old Appwrite data stays locked in the
   paused project; to import it, restore the project in the Appwrite console first.
 
+## Three examples (2026-11-07, Anat: "צור 3 דוגמאות - וריאציות שונות כדי להבין את אופן השימוש באפ")
+Three requests in `sign_requests` (`data.example = true`, ids `5a1e0001-...-00000000000{1,2,3}`, names start "דוגמה N:"),
+one per stage of a request, so every screen shows a real case:
+1. "מגדלי העצמאות", העצמאות 45: project sign, approved by all three, field check today "תואם לאישור".
+2. "בית רוגוזין", רוגוזין 30: talking fence 64 m (40% developer), needs revision: 3D render missing, field check today
+   "שונה מהמאושר", correction sent to the applicant; the day summary offers the WhatsApp message.
+3. "מרכז קהילתי הבנים", הבנים 8: project sign, just submitted, plan and two names missing, waiting for a first review.
+Documents and "photos" are drawn, marked "לדוגמה", in `public/examples/` (served from Pages), made by
+`scripts/make-examples.cjs` from `scripts/examples.json`. SQL: `supabase/seed_examples.sql`. Applicants' details are fake.
+Remove: `delete from sign_requests where data->>'example' = 'true';` (notes go with them, on delete cascade).
+
 ## Ownership and logo
 The municipality's (Ashdod Municipality). `aoa_apps` id `app-1774955394081`, `data.owner = "ashdod"`. `<ai-menu brand="ashdod">`
 shows the Ashdod logo with the same menu inside.
@@ -55,6 +66,7 @@ Playwright from the global install: `ln -s "$(npm root -g)/playwright" node_modu
 - 2026-11-03: field tour; the logo button became the Ashdod one (the app is municipal, it showed A&I).
 - 2026-11-03: tour map ordered by distance, and a day summary with a ready message to the applicant.
 - 2026-11-07: no sign-in; data moved from Appwrite (paused) to Supabase.
+- 2026-11-07: three example requests, one per stage (Anat: the old Appwrite data does not matter).
 
 ## Learned while building
 - Vercel (2026-11-03): with 80 of 100 deployments used, `create_deployment` through the API still answered 402; a git push to the
